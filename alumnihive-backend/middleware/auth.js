@@ -31,20 +31,9 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Check if user is verified and approved
-      if (!req.user.isVerified) {
-        return res.status(403).json({
-          success: false,
-          message: 'Please verify your email first'
-        });
-      }
-
-      if (!req.user.isApproved) {
-        return res.status(403).json({
-          success: false,
-          message: 'Your account is pending admin approval'
-        });
-      }
+      // ✅ REMOVED: Email verification check
+      // ✅ REMOVED: Admin approval check
+      // Users can access all routes without verification
 
       next();
     } catch (error) {

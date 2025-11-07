@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { UserIcon, EnvelopeIcon, LockClosedIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+import { authAPI } from '../services/api';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,11 +20,35 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const result = await register(formData);
-    setLoading(false);
     
-    if (result.success) {
-      navigate('/login');
+    try {
+      // Call register API
+      const response = await authAPI.register(formData);
+      
+      if (response.success) {
+        toast.success('Registration successful! Logging you in...');
+        
+        // If backend returns token, save it and auto-login
+        if (response.token) {
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('user', JSON.stringify(response.user));
+          
+          // Redirect to dashboard after 1 second
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
+        } else {
+          // Fallback to login page
+          setTimeout(() => {
+            navigate('/login');
+          }, 1000);
+        }
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Registration failed';
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 

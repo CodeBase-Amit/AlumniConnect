@@ -6,7 +6,7 @@ const { generateVerificationToken, sendVerificationEmail } = require('../utils/e
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE
+    expiresIn: process.env.JWT_EXPIRE || '7d'  // Added fallback for JWT_EXPIRE
   });
 };
 
@@ -31,11 +31,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Generate verification token
-    const verificationToken = generateVerificationToken();
-    const verificationTokenExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    // Create user
+    // Create user - Requires admin approval before login
     user = await User.create({
       name,
       email,
@@ -44,27 +40,26 @@ exports.register = async (req, res) => {
       role,
       department,
       graduationYear,
-      verificationToken,
-      verificationTokenExpire,
-      isVerified: false,
-      isApproved: false
+      isVerified: true,              // ✅ AUTO-VERIFIED (no email verification needed)
+      isApproved: true,              // ✅ AUTO-APPROVED (for internal system)
+      isApprovedByAdmin: false,       // ❌ NEEDS ADMIN APPROVAL TO LOGIN
+      verificationToken: undefined,
+      verificationTokenExpire: undefined
     });
-
-    // Send verification email
-    try {
-      await sendVerificationEmail(user, verificationToken);
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-    }
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful! Your account is pending admin approval. Please wait.',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar,
+        college: user.college,
+        department: user.department,
+        graduationYear: user.graduationYear,
+        isApprovedByAdmin: user.isApprovedByAdmin
       }
     });
   } catch (error) {
@@ -76,39 +71,21 @@ exports.register = async (req, res) => {
   }
 };
 
-// @desc    Verify email
+// @desc    Verify email (DEPRECATED - KEPT FOR BACKWARD COMPATIBILITY)
 // @route   GET /api/auth/verify-email/:token
 // @access  Public
 exports.verifyEmail = async (req, res) => {
   try {
-    const { token } = req.params;
-
-    const user = await User.findOne({
-      verificationToken: token,
-      verificationTokenExpire: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification token'
-      });
-    }
-
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpire = undefined;
-    await user.save();
-
+    // This endpoint is no longer used
     res.json({
       success: true,
-      message: 'Email verified successfully. Your account is pending admin approval.'
+      message: 'Email verification is no longer required. You can login directly.'
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Server error during email verification'
+      message: 'Server error'
     });
   }
 };
@@ -145,19 +122,12 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if verified
-    if (!user.isVerified) {
+    // ✅ NEW: Check admin approval (except for admins)
+    // Admins can always login, but other users need admin approval first
+    if (user.role !== 'admin' && !user.isApprovedByAdmin) {
       return res.status(403).json({
         success: false,
-        message: 'Please verify your email first'
-      });
-    }
-
-    // Check if approved
-    if (!user.isApproved) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending admin approval'
+        message: 'Your account is pending admin approval. Please wait for approval before logging in.'
       });
     }
 
@@ -178,7 +148,8 @@ exports.login = async (req, res) => {
         avatar: user.avatar,
         college: user.college,
         department: user.department,
-        graduationYear: user.graduationYear
+        graduationYear: user.graduationYear,
+        isApprovedByAdmin: user.isApprovedByAdmin
       }
     });
   } catch (error) {

@@ -47,6 +47,8 @@ const UserSchema = new mongoose.Schema({
   linkedin: String,
   github: String,
   portfolio: String,
+  
+  // ✅ EMAIL VERIFICATION (NO LONGER REQUIRED FOR LOGIN)
   isVerified: {
     type: Boolean,
     default: false
@@ -57,10 +59,23 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  
+  // ✅ ADMIN APPROVAL (REQUIRED FOR LOGIN)
+  isApprovedByAdmin: {
+    type: Boolean,
+    default: false  // ❌ Needs admin approval to login
+  },
+  approvedAt: Date,
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  
   communities: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Community'
   }],
+  
   isMentor: {
     type: Boolean,
     default: false
@@ -74,6 +89,7 @@ const UserSchema = new mongoose.Schema({
     },
     bio: String
   },
+  
   createdAt: {
     type: Date,
     default: Date.now
@@ -86,14 +102,33 @@ const UserSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// ============================================
+// INDEXES
+// ============================================
+
+// Optimize queries
+UserSchema.index({ email: 1 });
+UserSchema.index({ role: 1 });
+UserSchema.index({ isApprovedByAdmin: 1 });
+UserSchema.index({ createdAt: -1 });
+
+// ============================================
+// METHODS
+// ============================================
+
 // Hash password before saving
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Compare password
@@ -105,6 +140,84 @@ UserSchema.methods.comparePassword = async function(enteredPassword) {
 UserSchema.methods.updateLastActive = function() {
   this.lastActive = Date.now();
   return this.save();
+};
+
+// Check if user can login
+UserSchema.methods.canLogin = function() {
+  // Admins can always login
+  if (this.role === 'admin') {
+    return true;
+  }
+  
+  // Other users need admin approval
+  return this.isApprovedByAdmin;
+};
+
+// Get public profile (without sensitive fields)
+UserSchema.methods.toPublicJSON = function() {
+  return {
+    id: this._id,
+    name: this.name,
+    email: this.email,
+    avatar: this.avatar,
+    bio: this.bio,
+    college: this.college,
+    department: this.department,
+    graduationYear: this.graduationYear,
+    currentCompany: this.currentCompany,
+    currentPosition: this.currentPosition,
+    skills: this.skills,
+    interests: this.interests,
+    linkedin: this.linkedin,
+    github: this.github,
+    portfolio: this.portfolio,
+    role: this.role,
+    isMentor: this.isMentor,
+    createdAt: this.createdAt
+  };
+};
+
+// ============================================
+// STATICS
+// ============================================
+
+// Find users pending approval
+UserSchema.statics.findPendingApprovals = function() {
+  return this.find({
+    isApprovedByAdmin: false,
+    role: { $ne: 'admin' }
+  }).sort({ createdAt: -1 });
+};
+
+// Find approved users
+UserSchema.statics.findApprovedUsers = function() {
+  return this.find({
+    isApprovedByAdmin: true
+  }).sort({ lastActive: -1 });
+};
+
+// Get dashboard stats
+UserSchema.statics.getDashboardStats = async function() {
+  const totalUsers = await this.countDocuments();
+  const pendingApprovals = await this.countDocuments({ 
+    isApprovedByAdmin: false,
+    role: { $ne: 'admin' }
+  });
+  const approvedUsers = await this.countDocuments({ isApprovedByAdmin: true });
+  const students = await this.countDocuments({ role: 'student' });
+  const alumni = await this.countDocuments({ role: 'alumni' });
+  const admins = await this.countDocuments({ role: 'admin' });
+  const mentors = await this.countDocuments({ isMentor: true });
+
+  return {
+    totalUsers,
+    pendingApprovals,
+    approvedUsers,
+    students,
+    alumni,
+    admins,
+    mentors
+  };
 };
 
 module.exports = mongoose.model('User', UserSchema);
