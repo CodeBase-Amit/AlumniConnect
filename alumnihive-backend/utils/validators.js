@@ -18,23 +18,34 @@ const loginValidation = [
 const createCommunityValidation = [
   body('name').trim().notEmpty().withMessage('Community name is required'),
   body('description').trim().notEmpty().withMessage('Description is required'),
-  body('category').isIn(['technology', 'career', 'hobby', 'academic', 'sports', 'arts', 'other'])
+  body('category')
+    .isIn(['technology', 'career', 'hobby', 'academic', 'sports', 'arts', 'other'])
     .withMessage('Invalid category')
 ];
 
-// Blog validation
+// Blog validation (combined & updated)
 const createBlogValidation = [
-  body('title').trim().notEmpty().withMessage('Title is required'),
-  body('content').trim().notEmpty().withMessage('Content is required'),
-  body('category').isIn(['technology', 'career', 'education', 'lifestyle', 'other'])
-    .withMessage('Invalid category')
+  body('title')
+    .trim()
+    .notEmpty().withMessage('Title is required')
+    .isLength({ max: 200 }).withMessage('Title cannot exceed 200 characters'),
+  body('content')
+    .trim()
+    .notEmpty().withMessage('Content is required'),
+  body('category')
+    .isIn(['technology', 'career', 'education', 'lifestyle', 'other'])
+    .withMessage('Invalid category'),
+  body('excerpt')
+    .optional()
+    .isLength({ max: 300 }).withMessage('Excerpt cannot exceed 300 characters')
 ];
 
 // Question validation
 const createQuestionValidation = [
   body('title').trim().notEmpty().withMessage('Title is required'),
   body('content').trim().notEmpty().withMessage('Content is required'),
-  body('category').isIn(['technical', 'career', 'academic', 'general', 'other'])
+  body('category')
+    .isIn(['technical', 'career', 'academic', 'general', 'other'])
     .withMessage('Invalid category')
 ];
 

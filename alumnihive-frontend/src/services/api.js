@@ -19,9 +19,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor
@@ -68,9 +66,9 @@ export const communitiesAPI = {
 
 // Messages API
 export const messagesAPI = {
-  getCommunityMessages: (communityId, params) => 
+  getCommunityMessages: (communityId, params) =>
     api.get(`/messages/community/${communityId}`, { params }),
-  getPrivateMessages: (userId, params) => 
+  getPrivateMessages: (userId, params) =>
     api.get(`/messages/private/${userId}`, { params }),
 };
 
@@ -83,7 +81,7 @@ export const mentorshipAPI = {
   addSession: (id, data) => api.post(`/mentorship/${id}/sessions`, data),
 };
 
-// Blogs API
+// Blogs API (updated)
 export const blogsAPI = {
   getBlogs: (params) => api.get('/blogs', { params }),
   getBlogBySlug: (slug) => api.get(`/blogs/${slug}`),
@@ -92,6 +90,7 @@ export const blogsAPI = {
   deleteBlog: (id) => api.delete(`/blogs/${id}`),
   likeBlog: (id) => api.post(`/blogs/${id}/like`),
   addComment: (id, data) => api.post(`/blogs/${id}/comments`, data),
+  getMyBlogs: () => api.get('/blogs/my/all'),
 };
 
 // Q&A API
@@ -101,9 +100,9 @@ export const qaAPI = {
   createQuestion: (data) => api.post('/qa', data),
   addAnswer: (id, data) => api.post(`/qa/${id}/answers`, data),
   voteQuestion: (id, data) => api.post(`/qa/${id}/vote`, data),
-  voteAnswer: (questionId, answerId, data) => 
+  voteAnswer: (questionId, answerId, data) =>
     api.post(`/qa/${questionId}/answers/${answerId}/vote`, data),
-  acceptAnswer: (questionId, answerId) => 
+  acceptAnswer: (questionId, answerId) =>
     api.post(`/qa/${questionId}/answers/${answerId}/accept`),
 };
 

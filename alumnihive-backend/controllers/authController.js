@@ -31,11 +31,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Generate verification token
-    const verificationToken = generateVerificationToken();
-    const verificationTokenExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    // Create user
+    // Create user with auto verification & approval
     user = await User.create({
       name,
       email,
@@ -44,27 +40,28 @@ exports.register = async (req, res) => {
       role,
       department,
       graduationYear,
-      verificationToken,
-      verificationTokenExpire,
-      isVerified: false,
-      isApproved: false
+      isVerified: true,        // auto verify
+      isApproved: true,        // auto approve
+      verificationToken: undefined,
+      verificationTokenExpire: undefined
     });
 
-    // Send verification email
-    try {
-      await sendVerificationEmail(user, verificationToken);
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-    }
+    // Generate token for immediate login
+    const token = generateToken(user._id);
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful! You are now logged in.',
+      token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar,
+        college: user.college,
+        department: user.department,
+        graduationYear: user.graduationYear
       }
     });
   } catch (error) {
@@ -76,39 +73,20 @@ exports.register = async (req, res) => {
   }
 };
 
-// @desc    Verify email
+// @desc    Verify email (Deprecated)
 // @route   GET /api/auth/verify-email/:token
 // @access  Public
 exports.verifyEmail = async (req, res) => {
   try {
-    const { token } = req.params;
-
-    const user = await User.findOne({
-      verificationToken: token,
-      verificationTokenExpire: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification token'
-      });
-    }
-
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpire = undefined;
-    await user.save();
-
     res.json({
       success: true,
-      message: 'Email verified successfully. Your account is pending admin approval.'
+      message: 'Email verification is no longer required. You can login directly.'
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Server error during email verification'
+      message: 'Server error'
     });
   }
 };
@@ -145,23 +123,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if verified
-    if (!user.isVerified) {
-      return res.status(403).json({
-        success: false,
-        message: 'Please verify your email first'
-      });
-    }
-
-    // Check if approved
-    if (!user.isApproved) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending admin approval'
-      });
-    }
-
-    // Update last active
+    // Remove verification & approval checks
     user.updateLastActive();
 
     // Generate token

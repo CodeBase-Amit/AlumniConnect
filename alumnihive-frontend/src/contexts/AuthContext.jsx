@@ -2,7 +2,10 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
-const AuthContext = createContext();
+// Added default user value inside createContext
+export const AuthContext = createContext({
+  user: null, // ← Should have user
+});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -17,54 +20,41 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
-  console.log('AuthProvider: Initial token from localStorage:', token);
-
   useEffect(() => {
-    console.log('AuthProvider useEffect: Token changed:', token);
-    
     if (token) {
-      console.log('AuthProvider: Token exists, calling loadUser()');
       loadUser();
     } else {
-      console.log('AuthProvider: No token, setting loading to false');
       setLoading(false);
     }
   }, [token]);
 
   const loadUser = async () => {
     try {
-      console.log('AuthProvider: loadUser() called, making API request...');
       const response = await authAPI.getMe();
-      console.log('AuthProvider: API Success! User data:', response.data.user);
       setUser(response.data.user);
     } catch (error) {
-      console.error('AuthProvider: Failed to load user. Error:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('Failed to load user:', error);
       logout();
     } finally {
-      console.log('AuthProvider: Setting loading to false');
       setLoading(false);
     }
   };
 
   const login = async (credentials) => {
     try {
-      console.log('AuthProvider: Login called with email:', credentials.email);
       const response = await authAPI.login(credentials);
       const { token, user } = response.data;
-      
-      console.log('AuthProvider: Login Success! Token:', token);
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       setToken(token);
       setUser(user);
-      
+
       toast.success(`Welcome back, ${user.name}!`);
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
-      console.error('AuthProvider: Login failed:', message);
       toast.error(message);
       return { success: false, message };
     }
@@ -72,20 +62,25 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      console.log('AuthProvider: Register called with email:', userData.email);
       const response = await authAPI.register(userData);
-      toast.success(response.data.message);
-      return { success: true, message: response.data.message };
+      toast.success(response.message);
+
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setToken(response.token);
+        setUser(response.user);
+      }
+
+      return { success: true, message: response.message };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
-      console.error('AuthProvider: Register failed:', message);
       toast.error(message);
       return { success: false, message };
     }
   };
 
   const logout = () => {
-    console.log('AuthProvider: Logout called');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
