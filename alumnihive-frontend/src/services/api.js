@@ -22,6 +22,8 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
@@ -29,7 +31,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      window.location.href = isAdminRoute ? '/admin/login' : '/login';
       toast.error('Session expired. Please login again.');
     }
     return Promise.reject(error);
@@ -81,7 +84,7 @@ export const mentorshipAPI = {
   addSession: (id, data) => api.post(`/mentorship/${id}/sessions`, data),
 };
 
-// Blogs API (updated)
+// Blogs API
 export const blogsAPI = {
   getBlogs: (params) => api.get('/blogs', { params }),
   getBlogBySlug: (slug) => api.get(`/blogs/${slug}`),
@@ -93,17 +96,19 @@ export const blogsAPI = {
   getMyBlogs: () => api.get('/blogs/my/all'),
 };
 
-// Q&A API
-export const qaAPI = {
-  getQuestions: (params) => api.get('/qa', { params }),
-  getQuestionById: (id) => api.get(`/qa/${id}`),
-  createQuestion: (data) => api.post('/qa', data),
-  addAnswer: (id, data) => api.post(`/qa/${id}/answers`, data),
-  voteQuestion: (id, data) => api.post(`/qa/${id}/vote`, data),
-  voteAnswer: (questionId, answerId, data) =>
-    api.post(`/qa/${questionId}/answers/${answerId}/vote`, data),
-  acceptAnswer: (questionId, answerId) =>
-    api.post(`/qa/${questionId}/answers/${answerId}/accept`),
+// Questions API (NEW)
+export const questionsAPI = {
+  getQuestions: (params) => api.get('/questions', { params }),
+  getQuestionBySlug: (slug) => api.get(`/questions/${slug}`),
+  createQuestion: (data) => api.post('/questions', data),
+  updateQuestion: (id, data) => api.put(`/questions/${id}`, data),
+  deleteQuestion: (id) => api.delete(`/questions/${id}`),
+  voteQuestion: (id, voteType) => api.post(`/questions/${id}/vote`, { voteType }),
+  addAnswer: (id, data) => api.post(`/questions/${id}/answers`, data),
+  voteAnswer: (id, answerId, voteType) =>
+    api.post(`/questions/${id}/answers/${answerId}/vote`, { voteType }),
+  acceptAnswer: (id, answerId) =>
+    api.post(`/questions/${id}/answers/${answerId}/accept`),
 };
 
 // Events API

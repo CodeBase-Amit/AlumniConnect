@@ -270,12 +270,13 @@ exports.likeBlog = async (req, res) => {
       });
     }
     
-    const isLiked = blog.likes.includes(req.user.id);
+    const userId = req.user.id.toString();
+    const isLiked = blog.likes.some(id => id.toString() === userId);
     
     if (isLiked) {
-      blog.likes = blog.likes.filter(id => id.toString() !== req.user.id.toString());
+      blog.likes = blog.likes.filter(id => id.toString() !== userId);
     } else {
-      blog.likes.push(req.user.id);
+      blog.likes.push(userId);
     }
     
     await blog.save();

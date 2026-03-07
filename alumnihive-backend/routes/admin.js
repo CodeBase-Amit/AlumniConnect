@@ -1,5 +1,5 @@
 const express = require('express');
-const { protect, roleCheck } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 const {
   getPendingApprovals,
   approveUser,
@@ -8,11 +8,13 @@ const {
 } = require('../controllers/adminController');
 
 const router = express.Router();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@platform.admin').toLowerCase();
 
 // All admin routes require admin role
 router.use(protect);
 router.use((req, res, next) => {
-  if (req.user.role !== 'admin') {
+  const userEmail = req.user?.email ? req.user.email.toLowerCase() : '';
+  if (req.user.role !== 'admin' || userEmail !== ADMIN_EMAIL) {
     return res.status(403).json({ success: false, message: 'Admin access required' });
   }
   next();

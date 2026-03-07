@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { LockClosedIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { login, logout } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -14,16 +15,16 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await authAPI.login(formData);
-
-      if (response.data.user.role !== 'admin') {
-        toast.error('Admin access required');
-        setLoading(false);
+      const result = await login(formData);
+      if (!result.success) {
         return;
       }
 
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      if (result.user.role !== 'admin') {
+        logout();
+        toast.error('Admin access required');
+        return;
+      }
       
       toast.success('Admin login successful!');
       navigate('/admin/dashboard');

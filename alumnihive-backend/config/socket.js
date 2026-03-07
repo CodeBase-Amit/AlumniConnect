@@ -1,9 +1,28 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Message = require('../models/Message');
+const Community = require('../models/Community');
 
 // Store active users
 const activeUsers = new Map();
+
+const canAccessCommunity = async (user, communityId) => {
+  const community = await Community.findById(communityId).select('members');
+
+  if (!community) {
+    return { allowed: false, reason: 'Community not found' };
+  }
+
+  const isMember = community.members.some(
+    member => member.user.toString() === user._id.toString()
+  );
+
+  if (!isMember && user.role !== 'admin') {
+    return { allowed: false, reason: 'Not authorized for this community' };
+  }
+
+  return { allowed: true, community };
+};
 
 const initializeSocket = (io) => {
   // Authentication middleware for socket
@@ -47,9 +66,18 @@ const initializeSocket = (io) => {
     socket.join(`user:${socket.user._id}`);
 
     // Join community rooms
-    socket.on('community:join', (communityId) => {
-      socket.join(`community:${communityId}`);
-      console.log(`User ${socket.user.name} joined community ${communityId}`);
+    socket.on('community:join', async (communityId) => {
+      try {
+        const access = await canAccessCommunity(socket.user, communityId);
+        if (!access.allowed) {
+          return socket.emit('message:error', { message: access.reason });
+        }
+
+        socket.join(`community:${communityId}`);
+        console.log(`User ${socket.user.name} joined community ${communityId}`);
+      } catch (error) {
+        socket.emit('message:error', { message: 'Unable to join community room' });
+      }
     });
 
     // Leave community room
@@ -62,6 +90,15 @@ const initializeSocket = (io) => {
     socket.on('message:send', async (data) => {
       try {
         const { communityId, content, type } = data;
+
+        if (!communityId || !content || !String(content).trim()) {
+          return socket.emit('message:error', { message: 'Community and content are required' });
+        }
+
+        const access = await canAccessCommunity(socket.user, communityId);
+        if (!access.allowed) {
+          return socket.emit('message:error', { message: access.reason });
+        }
         
         const message = await Message.create({
           sender: socket.user._id,
@@ -139,6 +176,26 @@ const initializeSocket = (io) => {
     socket.on('message:read', async (data) => {
       try {
         const { messageId } = data;
+
+        const message = await Message.findById(messageId);
+        if (!message) {
+          return socket.emit('message:error', { message: 'Message not found' });
+        }
+
+        if (message.isPrivate) {
+          if (!message.receiver || message.receiver.toString() !== socket.user._id.toString()) {
+            return socket.emit('message:error', { message: 'Not authorized to mark this message as read' });
+          }
+        } else {
+          if (!message.community) {
+            return socket.emit('message:error', { message: 'Community message is missing community reference' });
+          }
+
+          const access = await canAccessCommunity(socket.user, message.community);
+          if (!access.allowed) {
+            return socket.emit('message:error', { message: 'Not authorized to mark this message as read' });
+          }
+        }
         
         await Message.findByIdAndUpdate(messageId, {
           read: true,
@@ -146,13 +203,10 @@ const initializeSocket = (io) => {
         });
 
         // Notify sender
-        const message = await Message.findById(messageId);
-        if (message) {
-          io.to(`user:${message.sender}`).emit('message:read', {
-            messageId,
-            readBy: socket.user._id
-          });
-        }
+        io.to(`user:${message.sender}`).emit('message:read', {
+          messageId,
+          readBy: socket.user._id
+        });
       } catch (error) {
         console.error('Read receipt error:', error);
       }

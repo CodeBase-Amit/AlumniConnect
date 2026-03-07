@@ -7,19 +7,28 @@ import api from '../services/api';
 import { CheckCircleIcon, XCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
-      navigate('/login');
+    if (authLoading) {
+      return;
+    }
+
+    const hasToken = Boolean(localStorage.getItem('token'));
+    if (!user && hasToken) {
+      return;
+    }
+
+    if (!user || user.role !== 'admin') {
+      navigate('/admin/login');
       return;
     }
     loadData();
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const loadData = async () => {
     try {

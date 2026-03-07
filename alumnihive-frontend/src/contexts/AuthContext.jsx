@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
+      setLoading(true);
       loadUser();
     } else {
       setLoading(false);
@@ -52,7 +53,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
 
       toast.success(`Welcome back, ${user.name}!`);
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
       toast.error(message);

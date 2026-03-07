@@ -49,6 +49,9 @@ initializeSocket(io);
 // Make io accessible to routes
 app.set('io', io);
 
+// Route imports
+const questionRoutes = require('./routes/questions');
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -56,8 +59,11 @@ app.use('/api/communities', require('./routes/communities'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/mentorship', require('./routes/mentorship'));
 app.use('/api/blogs', require('./routes/blogs'));
-app.use('/api/qa', require('./routes/qa'));
+app.use('/api/questions', questionRoutes);
+app.use('/api/qa', questionRoutes);
 app.use('/api/events', require('./routes/events'));
+
+app.use('/api/admin', require('./routes/admin'));
 
 // Health check
 app.get('/api/health', (req, res) => {

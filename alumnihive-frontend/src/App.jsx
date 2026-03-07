@@ -4,6 +4,8 @@ import { SocketProvider } from './contexts/SocketContext'
 import PrivateRoute from './components/PrivateRoute'
 
 // Pages
+import AdminLogin from './pages/AdminLogin.jsx'   // ⭐ Added import
+import AdminDashboard from './pages/AdminDashboard.jsx'   // ⭐ Added import
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -15,6 +17,7 @@ import BlogDetail from './pages/BlogDetail.jsx'
 import CreateBlog from './pages/CreateBlog.jsx'
 import EditBlog from './pages/EditBlog.jsx'   // ⭐ Added import
 import Questions from './pages/Questions.jsx'
+import AskQuestion from './pages/AskQuestion.jsx'   // ⭐ Added import
 import QuestionDetail from './pages/QuestionDetail.jsx'
 import Profile from './pages/Profile.jsx'
 import Events from './pages/Events.jsx'
@@ -31,6 +34,10 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
             {/* Protected Routes */}
             <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
@@ -44,12 +51,13 @@ function App() {
             {/* Blogs */}
             <Route path="/blogs" element={<PrivateRoute><Blogs /></PrivateRoute>} />
             <Route path="/blogs/create" element={<PrivateRoute><CreateBlog /></PrivateRoute>} />
-            <Route path="/blogs/edit/:id" element={<PrivateRoute><EditBlog /></PrivateRoute>} />   {/* ⭐ Added Edit Route */}
+            <Route path="/blogs/edit/:id" element={<PrivateRoute><EditBlog /></PrivateRoute>} />
             <Route path="/blogs/:slug" element={<PrivateRoute><BlogDetail /></PrivateRoute>} />
 
-            {/* Q&A */}
+            {/* Q&A Routes */}
             <Route path="/questions" element={<PrivateRoute><Questions /></PrivateRoute>} />
-            <Route path="/questions/:id" element={<PrivateRoute><QuestionDetail /></PrivateRoute>} />
+            <Route path="/questions/ask" element={<PrivateRoute><AskQuestion /></PrivateRoute>} />
+            <Route path="/questions/:slug" element={<PrivateRoute><QuestionDetail /></PrivateRoute>} />
 
             {/* Events */}
             <Route path="/events" element={<PrivateRoute><Events /></PrivateRoute>} />

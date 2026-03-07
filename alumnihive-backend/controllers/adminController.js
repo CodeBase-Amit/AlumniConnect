@@ -27,6 +27,7 @@ exports.approveUser = async (req, res) => {
     }
 
     user.isApprovedByAdmin = true;
+    user.isApproved = true;
     user.approvedAt = new Date();
     user.approvedBy = req.user._id;
     await user.save();

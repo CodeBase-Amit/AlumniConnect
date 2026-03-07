@@ -16,7 +16,7 @@ const NotificationSchema = new mongoose.Schema({
       'message', 'mention', 'comment', 'like', 
       'follow', 'mentorship_request', 'mentorship_accepted',
       'event_reminder', 'community_invite', 'community_post',
-      'answer', 'question_solved', 'system'
+      'answer', 'question_solved', 'approval', 'rejection', 'system'
     ],
     required: true
   },

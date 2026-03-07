@@ -1,6 +1,7 @@
 const Community = require('../models/Community');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const { validationResult } = require('express-validator');
 
 // @desc    Get all communities
 // @route   GET /api/communities
@@ -10,13 +11,16 @@ exports.getCommunities = async (req, res) => {
     const { search, category, page = 1, limit = 20 } = req.query;
 
     const query = { isActive: true };
+    const andConditions = [];
 
     if (search) {
-      query.$or = [
+      andConditions.push({
+        $or: [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
         { tags: { $in: [new RegExp(search, 'i')] } }
-      ];
+      ]
+      });
     }
 
     if (category) {
@@ -25,10 +29,16 @@ exports.getCommunities = async (req, res) => {
 
     // Filter private communities
     if (req.user.role !== 'admin') {
-      query.$or = [
-        { isPrivate: false },
-        { 'members.user': req.user._id }
-      ];
+      andConditions.push({
+        $or: [
+          { isPrivate: false },
+          { 'members.user': req.user._id }
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      query.$and = andConditions;
     }
 
     const communities = await Community.find(query)
@@ -99,6 +109,11 @@ exports.getCommunityById = async (req, res) => {
 // @access  Private
 exports.createCommunity = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
     const {
       name, description, category, tags,
       isPrivate, requireApproval, rules

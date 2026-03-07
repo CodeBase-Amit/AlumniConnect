@@ -1,55 +1,67 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
-const QuestionSchema = new mongoose.Schema({
+const questionSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Please provide a question title'],
+    required: [true, 'Please add a title'],
     trim: true,
-    maxlength: [300, 'Title cannot exceed 300 characters']
+    maxlength: [200, 'Title cannot be more than 200 characters']
+  },
+  slug: {
+    type: String,
+    unique: true
   },
   content: {
     type: String,
-    required: [true, 'Please provide question content']
+    required: [true, 'Please add content']
   },
+  category: {
+    type: String,
+    required: [true, 'Please add a category'],
+    enum: ['technical', 'career', 'academic', 'general', 'other']
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  tags: [String],
-  category: {
-    type: String,
-    required: true,
-    enum: ['technical', 'career', 'academic', 'general', 'other']
-  },
-  community: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Community'
-  },
   answers: [{
-    user: {
+    content: {
+      type: String,
+      required: true
+    },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    votes: {
+      type: Number,
+      default: 0
+    },
+    upvotedBy: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
-    },
-    content: String,
+    }],
+    downvotedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
     isAccepted: {
       type: Boolean,
       default: false
     },
-    upvotes: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }],
-    downvotes: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }],
     comments: [{
-      user: {
+      content: String,
+      author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       },
-      content: String,
       createdAt: {
         type: Date,
         default: Date.now
@@ -60,11 +72,15 @@ const QuestionSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  upvotes: [{
+  votes: {
+    type: Number,
+    default: 0
+  },
+  upvotedBy: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
-  downvotes: [{
+  downvotedBy: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
@@ -72,21 +88,34 @@ const QuestionSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  isSolved: {
+  status: {
+    type: String,
+    enum: ['open', 'answered', 'closed'],
+    default: 'open'
+  },
+  isClosed: {
     type: Boolean,
     default: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// Index for efficient queries
-QuestionSchema.index({ tags: 1 });
-QuestionSchema.index({ category: 1 });
-QuestionSchema.index({ author: 1 });
+// Create slug before saving
+questionSchema.pre('save', function(next) {
+  if (this.isModified('title')) {
+    this.slug = slugify(this.title, { lower: true, strict: true }) + '-' + Date.now();
+  }
+  
+  // Update status based on answers
+  if (this.answers && this.answers.length > 0) {
+    const hasAcceptedAnswer = this.answers.some(answer => answer.isAccepted);
+    if (hasAcceptedAnswer) {
+      this.status = 'answered';
+    }
+  }
+  
+  next();
+});
 
-module.exports = mongoose.model('Question', QuestionSchema);
+module.exports = mongoose.model('Question', questionSchema);

@@ -1,4 +1,5 @@
 const Message = require('../models/Message');
+const Community = require('../models/Community');
 
 // @desc    Get community messages
 // @route   GET /api/messages/community/:communityId
@@ -7,6 +8,22 @@ exports.getMessages = async (req, res) => {
   try {
     const { communityId } = req.params;
     const { page = 1, limit = 50 } = req.query;
+
+    const community = await Community.findById(communityId);
+    if (!community) {
+      return res.status(404).json({
+        success: false,
+        message: 'Community not found'
+      });
+    }
+
+    const isMember = community.isMember(req.user._id);
+    if (!isMember && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access community messages'
+      });
+    }
 
     const messages = await Message.find({
       community: communityId,

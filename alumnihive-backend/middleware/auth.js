@@ -1,19 +1,22 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
 const protect = async (req, res, next) => {
   try {
     let token;
 
     // Check for token in headers
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
     }
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Not authorized to access this route'
+        message: "Not authorized to access this route",
       });
     }
 
@@ -22,12 +25,12 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await User.findById(decoded.id).select("-password");
 
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -35,14 +38,20 @@ const protect = async (req, res, next) => {
       if (!req.user.isVerified) {
         return res.status(403).json({
           success: false,
-          message: 'Please verify your email first'
+          message: "Please verify your email first",
         });
       }
 
-      if (!req.user.isApproved) {
+      const isApproved =
+        typeof req.user.isApprovedByAdmin === "boolean"
+          ? req.user.isApprovedByAdmin
+          : req.user.isApproved;
+
+      if (!isApproved) {
         return res.status(403).json({
           success: false,
-          message: 'Your account is pending admin approval'
+
+          message: "Your account is pending admin approval",
         });
       }
 
@@ -50,15 +59,29 @@ const protect = async (req, res, next) => {
     } catch (error) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token'
+        message: "Invalid token",
       });
     }
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error in authentication'
+      message: "Server error in authentication",
     });
   }
+};
+
+// Admin Only
+
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+
+      message: "Admin only",
+    });
+  }
+
+  next();
 };
 
 // Optional auth - doesn't fail if no token
@@ -66,14 +89,17 @@ const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
     }
 
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id).select('-password');
+        req.user = await User.findById(decoded.id).select("-password");
       } catch (error) {
         // Continue without user if token is invalid
         req.user = null;
@@ -86,4 +112,12 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, optionalAuth };
+module.exports = {
+
+ protect,
+
+ optionalAuth,
+
+ isAdmin
+
+};
