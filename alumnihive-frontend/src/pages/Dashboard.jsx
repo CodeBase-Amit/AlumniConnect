@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { communitiesAPI, blogsAPI, eventsAPI } from '../services/api';
 import { Link } from 'react-router-dom';
 import { UserGroupIcon, BookOpenIcon, CalendarIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -111,7 +112,7 @@ const Dashboard = () => {
                   </p>
                   <div className="flex items-center text-sm text-gray-500">
                     <img
-                      src={blog.author?.avatar}
+                      src={resolveMediaUrl(blog.author?.avatar || 'https://via.placeholder.com/24')}
                       alt={blog.author?.name}
                       className="w-6 h-6 rounded-full mr-2"
                     />

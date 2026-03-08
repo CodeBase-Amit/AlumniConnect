@@ -10,6 +10,14 @@ const api = axios.create({
   },
 });
 
+const formDataConfig = {
+  headers: {
+    'Content-Type': 'multipart/form-data'
+  }
+};
+
+const isFormDataPayload = (payload) => typeof FormData !== 'undefined' && payload instanceof FormData;
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -53,7 +61,8 @@ export const authAPI = {
 export const usersAPI = {
   getUsers: (params) => api.get('/users', { params }),
   getUserById: (id) => api.get(`/users/${id}`),
-  updateProfile: (data) => api.put('/users/profile', data),
+  updateProfile: (data) => api.put('/users/profile', data, isFormDataPayload(data) ? formDataConfig : undefined),
+  updateProfilePhoto: (data) => api.put('/users/profile/photo', data, formDataConfig),
   getMentors: (params) => api.get('/users/mentors', { params }),
   becomeMentor: (data) => api.post('/users/become-mentor', data),
   getNotifications: (params) => api.get('/users/notifications', { params }),
@@ -64,7 +73,7 @@ export const usersAPI = {
 export const communitiesAPI = {
   getCommunities: (params) => api.get('/communities', { params }),
   getCommunityById: (id) => api.get(`/communities/${id}`),
-  createCommunity: (data) => api.post('/communities', data),
+  createCommunity: (data) => api.post('/communities', data, isFormDataPayload(data) ? formDataConfig : undefined),
   joinCommunity: (id, data) => api.post(`/communities/${id}/join`, data),
   leaveCommunity: (id) => api.post(`/communities/${id}/leave`),
 };
@@ -75,6 +84,10 @@ export const messagesAPI = {
     api.get(`/messages/community/${communityId}`, { params }),
   getPrivateMessages: (userId, params) =>
     api.get(`/messages/private/${userId}`, { params }),
+  deletePrivateMessage: (messageId) =>
+    api.delete(`/messages/private/${messageId}`),
+  bulkDeletePrivateMessages: (messageIds) =>
+    api.post('/messages/private/bulk-delete', { messageIds }),
 };
 
 // Mentorship API
@@ -90,8 +103,8 @@ export const mentorshipAPI = {
 export const blogsAPI = {
   getBlogs: (params) => api.get('/blogs', { params }),
   getBlogBySlug: (slug) => api.get(`/blogs/${slug}`),
-  createBlog: (data) => api.post('/blogs', data),
-  updateBlog: (id, data) => api.put(`/blogs/${id}`, data),
+  createBlog: (data) => api.post('/blogs', data, isFormDataPayload(data) ? formDataConfig : undefined),
+  updateBlog: (id, data) => api.put(`/blogs/${id}`, data, isFormDataPayload(data) ? formDataConfig : undefined),
   deleteBlog: (id) => api.delete(`/blogs/${id}`),
   likeBlog: (id) => api.post(`/blogs/${id}/like`),
   addComment: (id, data) => api.post(`/blogs/${id}/comments`, data),
@@ -117,8 +130,8 @@ export const questionsAPI = {
 export const eventsAPI = {
   getEvents: (params) => api.get('/events', { params }),
   getEventById: (id) => api.get(`/events/${id}`),
-  createEvent: (data) => api.post('/events', data),
-  updateEvent: (id, data) => api.put(`/events/${id}`, data),
+  createEvent: (data) => api.post('/events', data, isFormDataPayload(data) ? formDataConfig : undefined),
+  updateEvent: (id, data) => api.put(`/events/${id}`, data, isFormDataPayload(data) ? formDataConfig : undefined),
   deleteEvent: (id) => api.delete(`/events/${id}`),
   registerForEvent: (id) => api.post(`/events/${id}/register`),
 };

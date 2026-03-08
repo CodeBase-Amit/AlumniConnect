@@ -49,8 +49,61 @@ exports.getEventById = async (req, res) => {
 
 exports.createEvent = async (req, res) => {
   try {
+    const {
+      title,
+      description,
+      community,
+      eventType,
+      startDate,
+      endDate,
+      maxAttendees,
+      tags,
+      isPublic,
+      isPaid,
+      price,
+      locationType,
+      locationVenue,
+      locationAddress,
+      locationCity,
+      locationMeetingLink
+    } = req.body;
+
+    if (!title || !description || !community || !eventType || !startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Missing required event fields' });
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({ success: false, message: 'End date must be after start date' });
+    }
+
+    const parsedTags = Array.isArray(tags)
+      ? tags
+      : typeof tags === 'string'
+        ? tags.split(',').map(tag => tag.trim()).filter(Boolean)
+        : [];
+
+    const coverImage = req.file ? `/uploads/events/${req.file.filename}` : req.body.coverImage;
+
     const event = await Event.create({
-      ...req.body,
+      title,
+      description,
+      community,
+      eventType,
+      startDate,
+      endDate,
+      maxAttendees: maxAttendees ? Number(maxAttendees) : undefined,
+      tags: parsedTags,
+      isPublic: String(isPublic) !== 'false',
+      isPaid: String(isPaid) === 'true',
+      price: price ? Number(price) : undefined,
+      coverImage,
+      location: {
+        type: locationType || 'online',
+        venue: locationVenue,
+        address: locationAddress,
+        city: locationCity,
+        meetingLink: locationMeetingLink
+      },
       creator: req.user._id
     });
 
@@ -74,7 +127,17 @@ exports.updateEvent = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    event = await Event.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = { ...req.body };
+
+    if (req.file) {
+      payload.coverImage = `/uploads/events/${req.file.filename}`;
+    }
+
+    if (payload.tags && !Array.isArray(payload.tags)) {
+      payload.tags = String(payload.tags).split(',').map(tag => tag.trim()).filter(Boolean);
+    }
+
+    event = await Event.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true
     });

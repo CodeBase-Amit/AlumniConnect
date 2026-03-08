@@ -120,6 +120,23 @@ const initializeSocket = (io) => {
     socket.on('message:private', async (data) => {
       try {
         const { receiverId, content, type } = data;
+
+        if (!receiverId || !content || !String(content).trim()) {
+          return socket.emit('message:error', { message: 'Receiver and content are required' });
+        }
+
+        if (receiverId.toString() === socket.user._id.toString()) {
+          return socket.emit('message:error', { message: 'Cannot send message to yourself' });
+        }
+
+        const receiver = await User.findById(receiverId).select('_id name avatar role');
+        if (!receiver) {
+          return socket.emit('message:error', { message: 'Receiver not found' });
+        }
+
+        if (receiver.isBlocked) {
+          return socket.emit('message:error', { message: 'Cannot message blocked user' });
+        }
         
         const message = await Message.create({
           sender: socket.user._id,
@@ -130,12 +147,13 @@ const initializeSocket = (io) => {
         });
 
         await message.populate('sender', 'name avatar role');
+        await message.populate('receiver', 'name avatar role');
 
         // Send to receiver
         io.to(`user:${receiverId}`).emit('message:private:new', message);
         
-        // Send confirmation to sender
-        socket.emit('message:private:sent', message);
+        // Emit to sender as well so sender UI updates in real time with same payload shape.
+        socket.emit('message:private:new', message);
       } catch (error) {
         socket.emit('message:error', { message: error.message });
       }

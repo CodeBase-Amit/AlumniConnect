@@ -119,23 +119,31 @@ exports.createBlog = async (req, res) => {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
     
-    const { 
+    const {
       title, 
       content, 
       excerpt, 
-      coverImage, 
+      coverImage,
       tags, 
       category, 
       community,
       isPublished 
     } = req.body;
+
+    const parsedTags = Array.isArray(tags)
+      ? tags
+      : typeof tags === 'string'
+        ? tags.split(',').map(tag => tag.trim()).filter(Boolean)
+        : [];
+
+    const uploadedCoverImage = req.file ? `/uploads/blogs/${req.file.filename}` : coverImage;
     
     const blog = await Blog.create({
       title,
       content,
       excerpt,
-      coverImage,
-      tags: tags || [],
+      coverImage: uploadedCoverImage,
+      tags: parsedTags,
       category,
       community,
       author: req.user.id,
@@ -180,7 +188,7 @@ exports.updateBlog = async (req, res) => {
       });
     }
     
-    const { 
+    const {
       title, 
       content, 
       excerpt, 
@@ -193,8 +201,17 @@ exports.updateBlog = async (req, res) => {
     blog.title = title || blog.title;
     blog.content = content || blog.content;
     blog.excerpt = excerpt || blog.excerpt;
-    blog.coverImage = coverImage || blog.coverImage;
-    blog.tags = tags || blog.tags;
+    if (req.file) {
+      blog.coverImage = `/uploads/blogs/${req.file.filename}`;
+    } else if (coverImage) {
+      blog.coverImage = coverImage;
+    }
+
+    if (tags) {
+      blog.tags = Array.isArray(tags)
+        ? tags
+        : String(tags).split(',').map(tag => tag.trim()).filter(Boolean);
+    }
     blog.category = category || blog.category;
     
     if (isPublished && !blog.isPublished) {

@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
+import { resolveMediaUrl } from '../utils/constants';
 
 const QuestionDetail = () => {
   const { slug } = useParams();
@@ -222,7 +223,7 @@ const QuestionDetail = () => {
 
                 <div className="flex items-center space-x-3 text-sm">
                   <img
-                    src={question.author?.avatar || 'https://via.placeholder.com/40'}
+                    src={resolveMediaUrl(question.author?.avatar || 'https://via.placeholder.com/40')}
                     alt={question.author?.name}
                     className="w-10 h-10 rounded-full"
                   />
@@ -321,7 +322,7 @@ const QuestionDetail = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3 text-sm">
                               <img
-                                src={answer.author?.avatar || 'https://via.placeholder.com/32'}
+                                src={resolveMediaUrl(answer.author?.avatar || 'https://via.placeholder.com/32')}
                                 alt={answer.author?.name}
                                 className="w-8 h-8 rounded-full"
                               />

@@ -4,6 +4,7 @@ import { blogsAPI } from '../services/api';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { BookOpenIcon, PlusIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Blogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -107,7 +108,7 @@ const Blogs = () => {
                   className="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden"
                 >
                   <img
-                    src={blog.coverImage || 'https://via.placeholder.com/400x200'}
+                    src={resolveMediaUrl(blog.coverImage || 'https://via.placeholder.com/400x200')}
                     alt={blog.title}
                     className="w-full h-48 object-cover"
                   />
@@ -132,7 +133,7 @@ const Blogs = () => {
                     <div className="flex items-center justify-between text-sm text-gray-500">
                       <div className="flex items-center space-x-2">
                         <img
-                          src={blog.author?.avatar || 'https://via.placeholder.com/40'}
+                          src={resolveMediaUrl(blog.author?.avatar || 'https://via.placeholder.com/40')}
                           alt={blog.author?.name}
                           className="w-6 h-6 rounded-full"
                         />

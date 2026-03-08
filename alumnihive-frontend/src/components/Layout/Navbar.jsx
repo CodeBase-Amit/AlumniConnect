@@ -1,12 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  HomeIcon, UserGroupIcon, AcademicCapIcon, 
-  BookOpenIcon, QuestionMarkCircleIcon, CalendarIcon,
-  BellIcon, UserCircleIcon, ChatBubbleLeftRightIcon
+import {
+  BellIcon, UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { usersAPI } from '../../services/api';
+import { resolveMediaUrl } from '../../utils/constants';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -46,17 +45,6 @@ const Navbar = () => {
               </div>
               <span className="text-xl font-bold text-gray-900">AlumniHive</span>
             </Link>
-          </div>
-
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1">
-            <NavLink to="/" icon={HomeIcon}>Dashboard</NavLink>
-            <NavLink to="/communities" icon={UserGroupIcon}>Communities</NavLink>
-            <NavLink to="/mentorship" icon={AcademicCapIcon}>Mentorship</NavLink>
-            <NavLink to="/blogs" icon={BookOpenIcon}>Blogs</NavLink>
-            <NavLink to="/questions" icon={QuestionMarkCircleIcon}>Q&A</NavLink>
-            <NavLink to="/events" icon={CalendarIcon}>Events</NavLink>
-            <NavLink to="/chat" icon={ChatBubbleLeftRightIcon}>Chat</NavLink>
           </div>
 
           {/* Right Side */}
@@ -108,7 +96,7 @@ const Navbar = () => {
             <div className="relative group">
               <button className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
                 <img
-                  src={user?.avatar || 'https://via.placeholder.com/40'}
+                  src={resolveMediaUrl(user?.avatar || 'https://via.placeholder.com/40')}
                   alt={user?.name}
                   className="w-8 h-8 rounded-full"
                 />
@@ -138,18 +126,6 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
-  );
-};
-
-const NavLink = ({ to, icon: Icon, children }) => {
-  return (
-    <Link
-      to={to}
-      className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
-    >
-      <Icon className="w-5 h-5" />
-      <span>{children}</span>
-    </Link>
   );
 };
 

@@ -5,10 +5,11 @@ import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { PencilIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Profile = () => {
   const { id } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
   const userId = id || currentUser?._id;
 
   const [user, setUser] = useState(null);
@@ -24,6 +25,8 @@ const Profile = () => {
     portfolio: ''
   });
   const [skillInput, setSkillInput] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -59,6 +62,33 @@ const Profile = () => {
       loadUser();
     } catch (error) {
       toast.error('Failed to update profile');
+    }
+  };
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const localPreview = URL.createObjectURL(file);
+    setAvatarPreview(localPreview);
+
+    const formPayload = new FormData();
+    formPayload.append('avatar', file);
+
+    try {
+      setAvatarUploading(true);
+      await usersAPI.updateProfilePhoto(formPayload);
+      toast.success('Profile photo updated');
+      await refreshUser();
+      loadUser();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to upload profile photo');
+      setAvatarPreview('');
+    } finally {
+      setAvatarUploading(false);
+      URL.revokeObjectURL(localPreview);
     }
   };
 
@@ -103,7 +133,7 @@ const Profile = () => {
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
               <img
-                src={user.avatar}
+                src={avatarPreview || resolveMediaUrl(user.avatar)}
                 alt={user.name}
                 className="w-24 h-24 rounded-full"
               />
@@ -114,13 +144,25 @@ const Profile = () => {
               </div>
             </div>
             {isOwnProfile && (
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="btn-primary flex items-center space-x-2"
-              >
-                <PencilIcon className="w-5 h-5" />
-                <span>Edit</span>
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="btn-primary flex items-center space-x-2"
+                >
+                  <PencilIcon className="w-5 h-5" />
+                  <span>Edit</span>
+                </button>
+                <label className="inline-block cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">
+                  {avatarUploading ? 'Uploading...' : 'Change Photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    disabled={avatarUploading}
+                  />
+                </label>
+              </div>
             )}
           </div>
 
@@ -240,7 +282,12 @@ const Profile = () => {
           <h2 className="font-bold text-lg mb-4">Communities ({user.communities?.length || 0})</h2>
           <div className="space-y-2">
             {user.communities?.slice(0, 5).map(community => (
-              <div key={community._id} className="p-3 bg-gray-50 rounded">
+              <div key={community._id} className="p-3 bg-gray-50 rounded flex items-center gap-3">
+                <img
+                  src={resolveMediaUrl(community.avatar || 'https://via.placeholder.com/32')}
+                  alt={community.name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
                 <p className="font-medium">{community.name}</p>
               </div>
             ))}

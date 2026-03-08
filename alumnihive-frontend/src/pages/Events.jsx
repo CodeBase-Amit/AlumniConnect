@@ -4,7 +4,7 @@ import { eventsAPI } from '../services/api';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { CalendarIcon, MapPinIcon, PlusIcon, UsersIcon } from '@heroicons/react/24/outline';
-import { formatDistanceToNow } from 'date-fns';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -81,9 +81,9 @@ const Events = () => {
         ) : events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {events.map(event => (
-              <div key={event._id} className="card hover:shadow-lg transition">
+              <div key={event._id} className="card hover:shadow-lg transition border border-gray-100">
                 <img
-                  src={event.coverImage || 'https://via.placeholder.com/400x200'}
+                  src={resolveMediaUrl(event.coverImage || 'https://via.placeholder.com/400x200')}
                   alt={event.title}
                   className="w-full h-40 object-cover rounded-lg mb-4"
                 />

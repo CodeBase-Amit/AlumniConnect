@@ -11,6 +11,7 @@ import {
   EyeIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Questions = () => {
   const [questions, setQuestions] = useState([]);
@@ -204,7 +205,7 @@ const Questions = () => {
                         
                         <div className="flex items-center space-x-2 text-sm text-gray-500">
                           <img
-                            src={question.author?.avatar || 'https://via.placeholder.com/32'}
+                            src={resolveMediaUrl(question.author?.avatar || 'https://via.placeholder.com/32')}
                             alt={question.author?.name}
                             className="w-6 h-6 rounded-full"
                           />

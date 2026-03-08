@@ -4,6 +4,7 @@ import { usersAPI, mentorshipAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { AcademicCapIcon } from '@heroicons/react/24/outline';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Mentorship = () => {
   const { user } = useAuth();
@@ -101,7 +102,7 @@ const Mentorship = () => {
               {mentors.map(mentor => (
                 <div key={mentor._id} className="card hover:shadow-lg transition">
                   <img
-                    src={mentor.avatar}
+                    src={resolveMediaUrl(mentor.avatar || 'https://via.placeholder.com/200x120')}
                     alt={mentor.name}
                     className="w-full h-32 object-cover rounded-lg mb-4"
                   />
@@ -167,7 +168,7 @@ const Mentorship = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={m.mentor?.avatar || m.mentee?.avatar}
+                        src={resolveMediaUrl(m.mentor?.avatar || m.mentee?.avatar || 'https://via.placeholder.com/48')}
                         alt="mentor"
                         className="w-12 h-12 rounded-full"
                       />

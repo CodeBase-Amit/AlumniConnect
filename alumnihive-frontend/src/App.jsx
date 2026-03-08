@@ -26,6 +26,8 @@ import AskQuestion from './pages/AskQuestion.jsx'   // ⭐ Added import
 import QuestionDetail from './pages/QuestionDetail.jsx'
 import Profile from './pages/Profile.jsx'
 import Events from './pages/Events.jsx'
+import CreateEvent from './pages/CreateEvent.jsx'
+import EventDetail from './pages/EventDetail.jsx'
 import ChatPage from './pages/ChatPage.jsx'
 
 function App() {
@@ -71,6 +73,8 @@ function App() {
 
             {/* Events */}
             <Route path="/events" element={<PrivateRoute><Events /></PrivateRoute>} />
+            <Route path="/events/create" element={<PrivateRoute><CreateEvent /></PrivateRoute>} />
+            <Route path="/events/:id" element={<PrivateRoute><EventDetail /></PrivateRoute>} />
 
             {/* Chat */}
             <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />

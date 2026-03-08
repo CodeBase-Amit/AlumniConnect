@@ -118,6 +118,37 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+// @desc    Upload profile photo
+// @route   PUT /api/users/profile/photo
+// @access  Private
+exports.updateProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload an image file'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    user.avatar = `/uploads/profile/${req.file.filename}`.replace(/\\/g, '/');
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile photo updated successfully',
+      avatar: user.avatar,
+      user
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
 // @desc    Get mentors
 // @route   GET /api/users/mentors
 // @access  Private

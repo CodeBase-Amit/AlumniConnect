@@ -40,3 +40,19 @@ export const EVENT_TYPES = [
   { value: 'social', label: 'Social' },
   { value: 'other', label: 'Other' },
 ];
+
+export const resolveMediaUrl = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const normalized = String(value).trim().replace(/\\/g, '/');
+
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const origin = apiBase.replace(/\/api\/?$/, '');
+  return `${origin}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
+};

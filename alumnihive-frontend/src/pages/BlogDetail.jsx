@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { HeartIcon, ChatBubbleLeftIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
+import { resolveMediaUrl } from '../utils/constants';
 
 const BlogDetail = () => {
   const { slug } = useParams();
@@ -158,7 +159,7 @@ const BlogDetail = () => {
             <div className="flex items-center justify-between pb-6 border-b border-gray-200">
               <div className="flex items-center space-x-4">
                 <img
-                  src={blog.author?.avatar || 'https://via.placeholder.com/50'}
+                  src={resolveMediaUrl(blog.author?.avatar || 'https://via.placeholder.com/50')}
                   alt={blog.author?.name}
                   className="w-12 h-12 rounded-full"
                 />
@@ -188,7 +189,7 @@ const BlogDetail = () => {
           {/* Cover Image */}
           {blog.coverImage && (
             <img
-              src={blog.coverImage}
+              src={resolveMediaUrl(blog.coverImage)}
               alt={blog.title}
               className="w-full h-96 object-cover rounded-lg"
               onError={(e) => e.target.style.display = 'none'}
@@ -277,7 +278,7 @@ const BlogDetail = () => {
                 <div key={comment._id} className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center space-x-3 mb-3">
                     <img
-                      src={comment.user?.avatar || 'https://via.placeholder.com/40'}
+                      src={resolveMediaUrl(comment.user?.avatar || 'https://via.placeholder.com/40')}
                       alt={comment.user?.name}
                       className="w-10 h-10 rounded-full"
                     />

@@ -3,6 +3,7 @@ import MainLayout from '../components/Layout/MainLayout';
 import { blogsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { resolveMediaUrl } from '../utils/constants';
 
 const CreateBlog = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ const CreateBlog = () => {
     category: 'technology'
   });
   const [loading, setLoading] = useState(false);
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,11 +38,19 @@ const CreateBlog = () => {
     try {
       setLoading(true);
       
-      const blogData = {
-        ...formData,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        isPublished: publish
-      };
+      const blogData = new FormData();
+      blogData.append('title', formData.title);
+      blogData.append('content', formData.content);
+      blogData.append('excerpt', formData.excerpt);
+      blogData.append('category', formData.category);
+      blogData.append('tags', formData.tags);
+      blogData.append('isPublished', String(publish));
+
+      if (coverFile) {
+        blogData.append('coverImage', coverFile);
+      } else if (formData.coverImage) {
+        blogData.append('coverImage', formData.coverImage);
+      }
       
       const res = await blogsAPI.createBlog(blogData);
       toast.success(res.data.message);
@@ -53,6 +64,16 @@ const CreateBlog = () => {
   };
 
   const categories = ['technology', 'career', 'education', 'lifestyle', 'other'];
+
+  const handleCoverChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  };
 
   return (
     <MainLayout>
@@ -80,10 +101,15 @@ const CreateBlog = () => {
           </div>
 
           {/* Cover Image */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cover Image URL
-            </label>
+          <div className="bg-white rounded-lg shadow-md p-6 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">Cover Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverChange}
+              className="w-full text-sm"
+            />
+            <p className="text-xs text-gray-500">Optional: you can also provide image URL.</p>
             <input
               type="url"
               name="coverImage"
@@ -92,9 +118,9 @@ const CreateBlog = () => {
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
-            {formData.coverImage && (
+            {(coverPreview || formData.coverImage) && (
               <img
-                src={formData.coverImage}
+                src={coverPreview || resolveMediaUrl(formData.coverImage)}
                 alt="Preview"
                 className="mt-4 w-full h-48 object-cover rounded-lg"
                 onError={(e) => e.target.style.display = 'none'}

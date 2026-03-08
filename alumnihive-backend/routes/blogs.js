@@ -11,7 +11,10 @@ const {
   getMyBlogs
 } = require('../controllers/blogController');
 const { protect } = require('../middleware/auth');
+const { createImageUpload } = require('../middleware/upload');
 const { body } = require('express-validator');
+
+const blogUpload = createImageUpload('blogs');
 
 // Validation middleware
 const createBlogValidation = [
@@ -38,8 +41,8 @@ router.get('/', getBlogs);
 router.get('/my/all', protect, getMyBlogs);
 
 // Blog CRUD
-router.post('/', protect, createBlogValidation, createBlog);
-router.put('/:id', protect, updateBlog);
+router.post('/', protect, blogUpload.single('coverImage'), createBlogValidation, createBlog);
+router.put('/:id', protect, blogUpload.single('coverImage'), updateBlog);
 router.delete('/:id', protect, deleteBlog);
 
 // Like and Comment

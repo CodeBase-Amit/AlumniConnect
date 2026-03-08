@@ -44,6 +44,10 @@ const MessageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  deletedFor: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   reactions: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -70,5 +74,6 @@ const MessageSchema = new mongoose.Schema({
 // Index for efficient queries
 MessageSchema.index({ community: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
+MessageSchema.index({ deletedFor: 1 });
 
 module.exports = mongoose.model('Message', MessageSchema);

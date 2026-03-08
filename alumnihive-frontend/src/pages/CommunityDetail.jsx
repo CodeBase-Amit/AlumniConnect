@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaperAirplaneIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { resolveMediaUrl } from '../utils/constants';
 
 const CommunityDetail = () => {
   const { id } = useParams();
@@ -25,12 +26,23 @@ const CommunityDetail = () => {
     if (community && isMember) {
       loadMessages();
       if (socket) {
-        socket.emit('community:join', id);
-        socket.on('message:new', (msg) => {
+        const onMessage = (msg) => {
+          if (msg.community?.toString() !== id.toString()) {
+            return;
+          }
           setMessages(prev => [...prev, msg]);
-        });
+        };
+
+        socket.emit('community:join', id);
+        socket.on('message:new', onMessage);
+
+        return () => {
+          socket.emit('community:leave', id);
+          socket.off('message:new', onMessage);
+        };
       }
     }
+    return undefined;
   }, [community, isMember, socket, id]);
 
   const loadCommunity = async () => {
@@ -106,7 +118,7 @@ const CommunityDetail = () => {
           {/* Community Header */}
           <div className="card">
             <img
-              src={community.coverImage || 'https://via.placeholder.com/800x200'}
+              src={resolveMediaUrl(community.coverImage || 'https://via.placeholder.com/800x200')}
               alt={community.name}
               className="w-full h-48 object-cover rounded-lg mb-4"
             />
@@ -140,7 +152,7 @@ const CommunityDetail = () => {
                     <div key={msg._id} className="bg-white p-3 rounded">
                       <div className="flex items-center space-x-2 mb-1">
                         <img
-                          src={msg.sender?.avatar}
+                          src={resolveMediaUrl(msg.sender?.avatar || 'https://via.placeholder.com/24')}
                           alt={msg.sender?.name}
                           className="w-6 h-6 rounded-full"
                         />
@@ -201,7 +213,7 @@ const CommunityDetail = () => {
               {community.members?.slice(0, 10).map(m => (
                 <div key={m.user._id} className="flex items-center space-x-2">
                   <img
-                    src={m.user.avatar}
+                    src={resolveMediaUrl(m.user.avatar || 'https://via.placeholder.com/32')}
                     alt={m.user.name}
                     className="w-8 h-8 rounded-full"
                   />

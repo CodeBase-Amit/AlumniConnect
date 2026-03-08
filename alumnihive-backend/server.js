@@ -30,7 +30,9 @@ const io = socketIo(server, {
 connectDB();
 
 // Middleware
-app.use(helmet()); // Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+})); // Security headers with media loading support across frontend/backend origins
 app.use(compression()); // Compress responses
 app.use(morgan('dev')); // Logging
 app.use(cors({

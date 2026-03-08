@@ -4,6 +4,7 @@ import { communitiesAPI } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { resolveMediaUrl } from '../utils/constants';
 
 const Communities = () => {
   const navigate = useNavigate();
@@ -16,9 +17,12 @@ const Communities = () => {
     name: '',
     description: '',
     category: 'technology',
+    tags: '',
     isPrivate: false,
     requireApproval: false
   });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
 
   useEffect(() => {
     loadCommunities();
@@ -44,16 +48,30 @@ const Communities = () => {
   const handleCreateCommunity = async (e) => {
     e.preventDefault();
     try {
-      const res = await communitiesAPI.createCommunity(formData);
+      const payload = new FormData();
+      payload.append('name', formData.name);
+      payload.append('description', formData.description);
+      payload.append('category', formData.category);
+      payload.append('tags', formData.tags);
+      payload.append('isPrivate', String(formData.isPrivate));
+      payload.append('requireApproval', String(formData.requireApproval));
+      if (avatarFile) {
+        payload.append('avatar', avatarFile);
+      }
+
+      const res = await communitiesAPI.createCommunity(payload);
       toast.success('Community created successfully!');
       setShowCreateModal(false);
       setFormData({
         name: '',
         description: '',
         category: 'technology',
+        tags: '',
         isPrivate: false,
         requireApproval: false
       });
+      setAvatarFile(null);
+      setAvatarPreview('');
       loadCommunities();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create community');
@@ -115,7 +133,7 @@ const Communities = () => {
                 className="card hover:shadow-lg transition cursor-pointer"
               >
                 <img
-                  src={c.avatar}
+                  src={resolveMediaUrl(c.avatar)}
                   alt={c.name}
                   className="w-full h-32 object-cover rounded-lg mb-4"
                 />
@@ -177,6 +195,35 @@ const Communities = () => {
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tags</label>
+                  <input
+                    type="text"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    className="input-field"
+                    placeholder="technology, jobs, internship"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Community Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full text-sm"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) {
+                        return;
+                      }
+                      setAvatarFile(file);
+                      setAvatarPreview(URL.createObjectURL(file));
+                    }}
+                  />
+                  {avatarPreview && (
+                    <img src={avatarPreview} alt="Avatar preview" className="mt-3 h-24 w-full object-cover rounded-lg" />
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input

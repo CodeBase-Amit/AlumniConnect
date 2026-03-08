@@ -119,11 +119,21 @@ exports.createCommunity = async (req, res) => {
       isPrivate, requireApproval, rules
     } = req.body;
 
+    const parsedTags = Array.isArray(tags)
+      ? tags
+      : typeof tags === 'string'
+        ? tags.split(',').map(tag => tag.trim()).filter(Boolean)
+        : [];
+
+    const communityAvatar = req.file ? `/uploads/communities/${req.file.filename}` : undefined;
+
     const community = await Community.create({
       name,
       description,
       category,
-      tags,
+      tags: parsedTags,
+      ...(communityAvatar && { avatar: communityAvatar }),
+      ...(communityAvatar && { coverImage: communityAvatar }),
       isPrivate,
       requireApproval,
       rules,
