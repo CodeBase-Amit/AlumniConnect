@@ -224,6 +224,13 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is blocked by admin'
+      });
+    }
+
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,

@@ -61,6 +61,21 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  approvedAt: Date,
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockedAt: Date,
+  blockedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  blockReason: String,
   communities: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Community'

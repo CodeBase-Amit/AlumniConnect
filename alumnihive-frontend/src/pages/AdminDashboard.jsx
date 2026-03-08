@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import MainLayout from '../components/Layout/MainLayout';
+import AdminLayout from '../components/Layout/AdminLayout';
 import toast from 'react-hot-toast';
-import api from '../services/api';
-import { CheckCircleIcon, XCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { adminAPI } from '../services/api';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -33,8 +33,8 @@ const AdminDashboard = () => {
   const loadData = async () => {
     try {
       const [statsRes, usersRes] = await Promise.all([
-        api.get('/admin/stats'),
-        api.get('/admin/pending-approvals')
+        adminAPI.getStats(),
+        adminAPI.getPendingApprovals()
       ]);
 
       setStats(statsRes.data.stats);
@@ -48,7 +48,7 @@ const AdminDashboard = () => {
 
   const handleApproveUser = async (userId) => {
     try {
-      await api.post(`/admin/approve/${userId}`);
+      await adminAPI.approveUser(userId);
       toast.success('User approved!');
       loadData();
     } catch (error) {
@@ -58,7 +58,7 @@ const AdminDashboard = () => {
 
   const handleRejectUser = async (userId) => {
     try {
-      await api.post(`/admin/reject/${userId}`, {
+      await adminAPI.rejectUser(userId, {
         reason: 'Rejected by admin'
       });
       toast.success('User rejected!');
@@ -70,20 +70,19 @@ const AdminDashboard = () => {
 
   if (!stats || loading) {
     return (
-      <MainLayout>
+      <AdminLayout title="Admin Dashboard">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
         </div>
-      </MainLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <MainLayout>
+    <AdminLayout title="Admin Dashboard">
       <div className="space-y-8">
         {/* Stats */}
         <div>
-          <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <StatCard label="Total Users" value={stats.totalUsers} color="blue" />
             <StatCard label="Pending Approvals" value={stats.pendingApprovals} color="yellow" />
@@ -91,6 +90,13 @@ const AdminDashboard = () => {
             <StatCard label="Students" value={stats.students} color="purple" />
             <StatCard label="Alumni" value={stats.alumni} color="indigo" />
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <QuickLink to="/admin/users" label="Manage Users" />
+          <QuickLink to="/admin/blogs" label="Moderate Blogs" />
+          <QuickLink to="/admin/questions" label="Moderate Questions" />
+          <QuickLink to="/admin/communities" label="Moderate Communities" />
         </div>
 
         {/* Pending Approvals */}
@@ -129,9 +135,16 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
-    </MainLayout>
+    </AdminLayout>
   );
 };
+
+const QuickLink = ({ to, label }) => (
+  <Link to={to} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-400 transition">
+    <p className="text-sm text-gray-500">Admin</p>
+    <p className="font-semibold mt-1">{label}</p>
+  </Link>
+);
 
 const StatCard = ({ label, value, color }) => {
   const colors = {

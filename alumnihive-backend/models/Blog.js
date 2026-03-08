@@ -39,6 +39,25 @@ const BlogSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  isFeatured: {
+    type: Boolean,
+    default: false
+  },
+  moderationTag: {
+    type: String,
+    enum: ['none', 'spam', 'abuse', 'duplicate', 'other'],
+    default: 'none'
+  },
+  moderationReason: String,
+  moderatedAt: Date,
+  moderatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   publishedAt: Date,
   views: {
     type: Number,

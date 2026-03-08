@@ -6,6 +6,11 @@ import PrivateRoute from './components/PrivateRoute'
 // Pages
 import AdminLogin from './pages/AdminLogin.jsx'   // ⭐ Added import
 import AdminDashboard from './pages/AdminDashboard.jsx'   // ⭐ Added import
+import AdminUsers from './pages/AdminUsers.jsx'
+import AdminBlogs from './pages/AdminBlogs.jsx'
+import AdminQuestions from './pages/AdminQuestions.jsx'
+import AdminCommunities from './pages/AdminCommunities.jsx'
+import AdminModerationLogs from './pages/AdminModerationLogs.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -37,6 +42,11 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/blogs" element={<AdminBlogs />} />
+            <Route path="/admin/questions" element={<AdminQuestions />} />
+            <Route path="/admin/communities" element={<AdminCommunities />} />
+            <Route path="/admin/moderation-logs" element={<AdminModerationLogs />} />
 
             {/* Protected Routes */}
             <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

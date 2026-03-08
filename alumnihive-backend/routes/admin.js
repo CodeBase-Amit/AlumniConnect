@@ -4,7 +4,15 @@ const {
   getPendingApprovals,
   approveUser,
   rejectUser,
-  getDashboardStats
+  getDashboardStats,
+  getUsers,
+  blockUser,
+  unblockUser,
+  getContentList,
+  toggleContentBlock,
+  toggleContentFeature,
+  markContent,
+  getModerationLogs
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -24,5 +32,15 @@ router.get('/pending-approvals', getPendingApprovals);
 router.post('/approve/:userId', approveUser);
 router.post('/reject/:userId', rejectUser);
 router.get('/stats', getDashboardStats);
+router.get('/users', getUsers);
+router.post('/users/:userId/block', blockUser);
+router.post('/users/:userId/unblock', unblockUser);
+
+router.get('/content/:type', getContentList);
+router.post('/content/:type/:id/block', toggleContentBlock);
+router.post('/content/:type/:id/feature', toggleContentFeature);
+router.post('/content/:type/:id/mark', markContent);
+
+router.get('/moderation-logs', getModerationLogs);
 
 module.exports = router;

@@ -90,6 +90,25 @@ const CommunitySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  isFeatured: {
+    type: Boolean,
+    default: false
+  },
+  moderationTag: {
+    type: String,
+    enum: ['none', 'spam', 'abuse', 'duplicate', 'other'],
+    default: 'none'
+  },
+  moderationReason: String,
+  moderatedAt: Date,
+  moderatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   createdAt: {
     type: Date,
     default: Date.now

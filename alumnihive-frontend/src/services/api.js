@@ -121,4 +121,23 @@ export const eventsAPI = {
   registerForEvent: (id) => api.post(`/events/${id}/register`),
 };
 
+// Admin API
+export const adminAPI = {
+  getStats: () => api.get('/admin/stats'),
+  getPendingApprovals: () => api.get('/admin/pending-approvals'),
+  approveUser: (userId) => api.post(`/admin/approve/${userId}`),
+  rejectUser: (userId, data) => api.post(`/admin/reject/${userId}`, data),
+  getUsers: (params) => api.get('/admin/users', { params }),
+  blockUser: (userId, reason) => api.post(`/admin/users/${userId}/block`, { reason }),
+  unblockUser: (userId, reason) => api.post(`/admin/users/${userId}/unblock`, { reason }),
+  getContent: (type, params) => api.get(`/admin/content/${type}`, { params }),
+  toggleContentBlock: (type, id, blocked, reason) =>
+    api.post(`/admin/content/${type}/${id}/block`, { blocked, reason }),
+  toggleContentFeature: (type, id, featured) =>
+    api.post(`/admin/content/${type}/${id}/feature`, { featured }),
+  markContent: (type, id, tag, reason) =>
+    api.post(`/admin/content/${type}/${id}/mark`, { tag, reason }),
+  getModerationLogs: (params) => api.get('/admin/moderation-logs', { params })
+};
+
 export default api;

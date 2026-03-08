@@ -8,7 +8,7 @@ exports.getQuestions = async (req, res) => {
   try {
     const { search, category, tags, status, sort, page = 1, limit = 20 } = req.query;
     
-    const query = {};
+    const query = { isBlocked: false };
     
     if (search) {
       query.$or = [
@@ -70,7 +70,7 @@ exports.getQuestions = async (req, res) => {
 // @access  Public
 exports.getQuestionBySlug = async (req, res) => {
   try {
-    const question = await Question.findOne({ slug: req.params.slug })
+    const question = await Question.findOne({ slug: req.params.slug, isBlocked: false })
       .populate('author', 'name avatar email bio role')
       .populate('answers.author', 'name avatar role')
       .populate('answers.comments.author', 'name avatar');

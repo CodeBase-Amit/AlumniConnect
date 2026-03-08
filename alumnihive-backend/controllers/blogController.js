@@ -9,7 +9,7 @@ exports.getBlogs = async (req, res) => {
   try {
     const { search, category, author, page = 1, limit = 12 } = req.query;
     
-    const query = { isPublished: true };
+    const query = { isPublished: true, isBlocked: false };
     
     if (search) {
       query.$or = [
@@ -79,7 +79,7 @@ exports.getMyBlogs = async (req, res) => {
 // @access  Public
 exports.getBlogBySlug = async (req, res) => {
   try {
-    const blog = await Blog.findOne({ slug: req.params.slug })
+    const blog = await Blog.findOne({ slug: req.params.slug, isBlocked: false })
       .populate('author', 'name avatar email bio role currentCompany')  // ← Critical populate
       .populate('comments.user', 'name avatar')
       .populate('comments.replies.user', 'name avatar')

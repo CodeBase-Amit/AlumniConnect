@@ -10,7 +10,7 @@ exports.getCommunities = async (req, res) => {
   try {
     const { search, category, page = 1, limit = 20 } = req.query;
 
-    const query = { isActive: true };
+    const query = { isActive: true, isBlocked: false };
     const andConditions = [];
 
     if (search) {
@@ -70,7 +70,7 @@ exports.getCommunities = async (req, res) => {
 // @access  Private
 exports.getCommunityById = async (req, res) => {
   try {
-    const community = await Community.findById(req.params.id)
+    const community = await Community.findOne({ _id: req.params.id, isBlocked: false })
       .populate('creator', 'name avatar role')
       .populate('members.user', 'name avatar role')
       .populate('admins', 'name avatar')
