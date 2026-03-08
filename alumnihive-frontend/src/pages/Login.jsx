@@ -16,7 +16,7 @@ const Login = () => {
     setLoading(false);
     
     if (result.success) {
-      navigate('/');
+      navigate(result.user?.role === 'admin' ? '/admin/dashboard' : '/');
     }
   };
 

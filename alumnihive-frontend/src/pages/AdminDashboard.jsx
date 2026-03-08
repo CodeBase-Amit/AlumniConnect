@@ -18,7 +18,7 @@ const AdminDashboard = () => {
       return;
     }
 
-    const hasToken = Boolean(localStorage.getItem('token'));
+    const hasToken = Boolean(sessionStorage.getItem('token') || localStorage.getItem('token'));
     if (!user && hasToken) {
       return;
     }

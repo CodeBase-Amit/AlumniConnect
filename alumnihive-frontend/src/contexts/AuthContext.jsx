@@ -16,9 +16,32 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const getStoredToken = () => sessionStorage.getItem('token') || localStorage.getItem('token');
+
+  const migrateLegacyToken = () => {
+    const sessionToken = sessionStorage.getItem('token');
+    const localToken = localStorage.getItem('token');
+
+    if (!sessionToken && localToken) {
+      sessionStorage.setItem('token', localToken);
+      const legacyUser = localStorage.getItem('user');
+      if (legacyUser) {
+        sessionStorage.setItem('user', legacyUser);
+      }
+    }
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(getStoredToken());
+
+  useEffect(() => {
+    migrateLegacyToken();
+    setToken(getStoredToken());
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -46,8 +69,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(credentials);
       const { token, user } = response.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
 
       setToken(token);
       setUser(user);
@@ -64,16 +87,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      toast.success(response.message);
+      toast.success(response.data?.message || 'Registration successful');
 
-      if (response.token) {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        setToken(response.token);
-        setUser(response.user);
+      if (response.data?.token) {
+        sessionStorage.setItem('token', response.data.token);
+        sessionStorage.setItem('user', JSON.stringify(response.data.user));
+        setToken(response.data.token);
+        setUser(response.data.user);
       }
 
-      return { success: true, message: response.message };
+      return { success: true, message: response.data?.message };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
       toast.error(message);
@@ -82,6 +105,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);

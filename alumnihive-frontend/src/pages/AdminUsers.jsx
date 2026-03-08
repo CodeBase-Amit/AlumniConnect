@@ -9,6 +9,7 @@ const AdminUsers = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -29,8 +30,17 @@ const AdminUsers = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const res = await adminAPI.getUsers({ search: search || undefined, status: status || undefined });
-      setUsers(res.data.users || []);
+      const [allUsersRes, pendingUsersRes] = await Promise.all([
+        adminAPI.getUsers({ search: search || undefined, status: status || undefined }),
+        adminAPI.getUsers({ status: 'pending', limit: 200 })
+      ]);
+
+      setUsers(allUsersRes.data.users || []);
+
+      const pending = (pendingUsersRes.data.users || []).sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+      setPendingUsers(pending);
     } catch (error) {
       toast.error('Failed to load users');
     } finally {
@@ -53,8 +63,65 @@ const AdminUsers = () => {
     }
   };
 
+  const handleApprove = async (userId) => {
+    try {
+      await adminAPI.approveUser(userId);
+      toast.success('User approved');
+      loadUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to approve user');
+    }
+  };
+
+  const handleReject = async (userId) => {
+    try {
+      await adminAPI.rejectUser(userId, { reason: 'Rejected by admin from manage users' });
+      toast.success('User rejected');
+      loadUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to reject user');
+    }
+  };
+
   return (
     <AdminLayout title="User Management">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Pending Approvals (Oldest First)</h2>
+          <span className="text-sm text-gray-500">{pendingUsers.length} pending</span>
+        </div>
+
+        {pendingUsers.length === 0 ? (
+          <p className="text-sm text-gray-500">No pending users right now.</p>
+        ) : (
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            {pendingUsers.map((pending) => (
+              <div key={pending._id} className="border border-gray-200 rounded-lg p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium text-sm">{pending.name}</p>
+                  <p className="text-xs text-gray-600">{pending.email}</p>
+                  <p className="text-xs text-gray-500 mt-1">Registered: {new Date(pending.createdAt).toLocaleString()}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleApprove(pending._id)}
+                    className="rounded-lg px-3 py-1 text-sm bg-emerald-100 text-emerald-700"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReject(pending._id)}
+                    className="rounded-lg px-3 py-1 text-sm bg-red-100 text-red-700"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
         <div className="grid md:grid-cols-3 gap-3">
           <input

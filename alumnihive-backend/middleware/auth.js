@@ -34,6 +34,18 @@ const protect = async (req, res, next) => {
         });
       }
 
+      const isAdmin = req.user.role === "admin";
+      const requestPath = req.originalUrl || req.path || "";
+      const isAdminRoute = requestPath.startsWith("/api/admin");
+      const isAuthMeRoute = requestPath.startsWith("/api/auth/me");
+
+      if (isAdmin && !isAdminRoute && !isAuthMeRoute) {
+        return res.status(403).json({
+          success: false,
+          message: "Admin account can access only admin APIs",
+        });
+      }
+
       // Check if user is verified and approved
       if (!req.user.isVerified) {
         return res.status(403).json({
