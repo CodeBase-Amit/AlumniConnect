@@ -65,6 +65,7 @@ export const usersAPI = {
   updateProfilePhoto: (data) => api.put('/users/profile/photo', data, formDataConfig),
   getMentors: (params) => api.get('/users/mentors', { params }),
   becomeMentor: (data) => api.post('/users/become-mentor', data),
+  updateMentorApplication: (data) => api.put('/users/mentor-application', data),
   getNotifications: (params) => api.get('/users/notifications', { params }),
   markNotificationRead: (id) => api.put(`/users/notifications/${id}/read`),
 };
@@ -88,6 +89,8 @@ export const messagesAPI = {
     api.delete(`/messages/private/${messageId}`),
   bulkDeletePrivateMessages: (messageIds) =>
     api.post('/messages/private/bulk-delete', { messageIds }),
+  getMentorshipMessages: (mentorshipId, params) =>
+    api.get(`/messages/mentorship/${mentorshipId}`, { params }),
 };
 
 // Mentorship API
@@ -98,6 +101,12 @@ export const mentorshipAPI = {
   getMentorships: (params) => api.get('/mentorship/my-mentorships', { params }),
   getMentorMatches: (params) => api.get('/mentorship/matches', { params }),
   addSession: (id, data) => api.post(`/mentorship/${id}/sessions`, data),
+  updateSession: (id, sessionId, data) => api.put(`/mentorship/${id}/sessions/${sessionId}`, data),
+  completeSession: (id, sessionId, notes) => api.put(`/mentorship/${id}/sessions/${sessionId}/complete`, { notes }),
+  cancelSession: (id, sessionId) => api.put(`/mentorship/${id}/sessions/${sessionId}/cancel`),
+  completeMentorship: (id) => api.put(`/mentorship/${id}/complete`),
+  addFeedback: (id, data) => api.post(`/mentorship/${id}/feedback`, data),
+  rateMentee: (id, data) => api.post(`/mentorship/${id}/rate-mentee`, data),
 };
 
 // Blogs API

@@ -260,6 +260,48 @@ exports.becomeMentor = async (req, res) => {
   }
 };
 
+// @desc    Update mentor application (re-apply after rejection)
+// @route   PUT /api/users/mentor-application
+// @access  Private (Alumni only)
+exports.updateMentorApplication = async (req, res) => {
+  try {
+    if (req.user.role !== 'alumni') {
+      return res.status(403).json({ success: false, message: 'Only alumni can be mentors' });
+    }
+
+    const { expertise, availability, maxMentees, bio } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user.mentorDetails) {
+      user.mentorDetails = {};
+    }
+
+    if (expertise) {
+      user.mentorDetails.expertise = normalizeList(expertise);
+    }
+    if (availability) user.mentorDetails.availability = availability;
+    if (maxMentees) {
+      const parsed = Number.parseInt(maxMentees, 10);
+      if (Number.isFinite(parsed) && parsed > 0) user.mentorDetails.maxMentees = parsed;
+    }
+    if (bio) user.mentorDetails.bio = bio;
+
+    user.mentorDetails.applicationStatus = 'pending';
+    user.mentorDetails.appliedAt = new Date();
+    user.mentorDetails.reviewedAt = undefined;
+    user.mentorDetails.reviewedBy = undefined;
+    user.mentorDetails.rejectionReason = undefined;
+    user.isMentor = false;
+
+    await user.save();
+
+    res.json({ success: true, message: 'Mentor application re-submitted for review', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 // @desc    Get user notifications
 // @route   GET /api/users/notifications
 // @access  Private

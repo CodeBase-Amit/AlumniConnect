@@ -69,7 +69,7 @@ const scoreMentor = (user, mentor) => {
 // @access  Private
 exports.sendMentorshipRequest = async (req, res) => {
   try {
-    const { mentorId, requestMessage, goals, skills } = req.body;
+    const { mentorId, requestMessage, goals, skills, title, description } = req.body;
 
     const mentor = await User.findById(mentorId);
 
@@ -105,13 +105,15 @@ exports.sendMentorshipRequest = async (req, res) => {
       mentor: mentorId,
       mentee: req.user._id,
       requestMessage,
+      title: title || '',
+      description: description || '',
       goals,
       skills,
       status: 'pending'
     });
 
     // Notify mentor
-    await Notification.create({
+    const notification = await Notification.create({
       recipient: mentorId,
       sender: req.user._id,
       type: 'mentorship_request',
@@ -120,7 +122,15 @@ exports.sendMentorshipRequest = async (req, res) => {
       link: `/mentorship/requests`
     });
 
-    await mentorship.populate('mentee', 'name avatar email');
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${mentorId}`).emit('notification:new', notification);
+    }
+
+    await mentorship.populate([
+      { path: 'mentee', select: 'name avatar email' },
+      { path: 'mentor', select: 'name avatar email' }
+    ]);
 
     res.status(201).json({
       success: true,
@@ -203,7 +213,7 @@ exports.respondToRequest = async (req, res) => {
     await mentorship.save();
 
     // Notify mentee
-    await Notification.create({
+    const notification = await Notification.create({
       recipient: mentorship.mentee,
       sender: req.user._id,
       type: 'mentorship_accepted',
@@ -211,6 +221,11 @@ exports.respondToRequest = async (req, res) => {
       message: `${req.user.name} ${status === 'accepted' ? 'accepted' : 'rejected'} your mentorship request`,
       link: `/mentorship/${mentorship._id}`
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${mentorship.mentee}`).emit('notification:new', notification);
+    }
 
     await mentorship.populate('mentee', 'name avatar');
 
@@ -314,6 +329,274 @@ exports.addSession = async (req, res) => {
       success: false,
       message: 'Server error'
     });
+  }
+};
+
+// @desc    Complete a session
+// @route   PUT /api/mentorship/:id/sessions/:sessionId/complete
+// @access  Private
+exports.completeSession = async (req, res) => {
+  try {
+    const { notes } = req.body;
+    const mentorship = await Mentorship.findById(req.params.id);
+
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    const isAuthorized = mentorship.mentor.toString() === req.user._id.toString() ||
+      mentorship.mentee.toString() === req.user._id.toString();
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const session = mentorship.sessions.id(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    session.status = 'completed';
+    session.completedAt = Date.now();
+    if (notes) session.notes = notes;
+
+    if (mentorship.status === 'accepted') {
+      mentorship.status = 'active';
+    }
+
+    await mentorship.save();
+
+    // Notify the other party
+    const otherPartyId = req.user._id.toString() === mentorship.mentor.toString()
+      ? mentorship.mentee
+      : mentorship.mentor;
+
+    const notification = await Notification.create({
+      recipient: otherPartyId,
+      sender: req.user._id,
+      type: 'session_completed',
+      title: 'Session Completed',
+      message: `${req.user.name} completed session "${session.title}"`,
+      link: `/mentorship/${mentorship._id}`
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${otherPartyId}`).emit('notification:new', notification);
+    }
+
+    res.json({ success: true, mentorship });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Complete mentorship
+// @route   PUT /api/mentorship/:id/complete
+// @access  Private
+exports.completeMentorship = async (req, res) => {
+  try {
+    const mentorship = await Mentorship.findById(req.params.id);
+
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    const isAuthorized = mentorship.mentor.toString() === req.user._id.toString() ||
+      mentorship.mentee.toString() === req.user._id.toString();
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    mentorship.status = 'completed';
+    mentorship.endDate = Date.now();
+    await mentorship.save();
+
+    res.json({ success: true, mentorship });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Update a session
+// @route   PUT /api/mentorship/:id/sessions/:sessionId
+// @access  Private
+exports.updateSession = async (req, res) => {
+  try {
+    const { title, description, scheduledAt, duration } = req.body;
+
+    const mentorship = await Mentorship.findById(req.params.id);
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    const isAuthorized = mentorship.mentor.toString() === req.user._id.toString() ||
+      mentorship.mentee.toString() === req.user._id.toString();
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const session = mentorship.sessions.id(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    if (session.status !== 'scheduled') {
+      return res.status(400).json({ success: false, message: 'Can only edit scheduled sessions' });
+    }
+
+    if (title) session.title = title;
+    if (description !== undefined) session.description = description;
+    if (scheduledAt) session.scheduledAt = scheduledAt;
+    if (duration) session.duration = duration;
+
+    await mentorship.save();
+    res.json({ success: true, mentorship });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Cancel a session
+// @route   PUT /api/mentorship/:id/sessions/:sessionId/cancel
+// @access  Private
+exports.cancelSession = async (req, res) => {
+  try {
+    const mentorship = await Mentorship.findById(req.params.id);
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    const isAuthorized = mentorship.mentor.toString() === req.user._id.toString() ||
+      mentorship.mentee.toString() === req.user._id.toString();
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const session = mentorship.sessions.id(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    if (session.status !== 'scheduled') {
+      return res.status(400).json({ success: false, message: 'Can only cancel scheduled sessions' });
+    }
+
+    session.status = 'cancelled';
+    await mentorship.save();
+
+    res.json({ success: true, mentorship });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Mentor rates mentee
+// @route   POST /api/mentorship/:id/rate-mentee
+// @access  Private (Mentor only)
+exports.rateMentee = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+
+    const mentorship = await Mentorship.findById(req.params.id);
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    if (mentorship.mentor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Only the mentor can rate the mentee' });
+    }
+
+    if (!mentorship.menteeFeedback) {
+      mentorship.menteeFeedback = [];
+    }
+
+    mentorship.menteeFeedback.push({
+      from: req.user._id,
+      rating,
+      comment: comment || ''
+    });
+
+    await mentorship.save();
+
+    const notification = await Notification.create({
+      recipient: mentorship.mentee,
+      sender: req.user._id,
+      type: 'feedback_received',
+      title: 'Mentor Rated You',
+      message: `${req.user.name} rated your performance ${rating}/5`,
+      link: `/mentorship/${mentorship._id}`
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${mentorship.mentee}`).emit('notification:new', notification);
+    }
+
+    res.json({ success: true, mentorship });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Add feedback/rating to mentorship
+// @route   POST /api/mentorship/:id/feedback
+// @access  Private
+exports.addFeedback = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+
+    const mentorship = await Mentorship.findById(req.params.id);
+
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    if (mentorship.mentee.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Only the mentee can provide feedback' });
+    }
+
+    mentorship.feedback.push({
+      from: req.user._id,
+      rating,
+      comment: comment || ''
+    });
+
+    await mentorship.save();
+
+    // Notify mentor
+    const notification = await Notification.create({
+      recipient: mentorship.mentor,
+      sender: req.user._id,
+      type: 'feedback_received',
+      title: 'Feedback Received',
+      message: `${req.user.name} rated your mentorship ${rating}/5`,
+      link: `/mentorship/${mentorship._id}`
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${mentorship.mentor}`).emit('notification:new', notification);
+    }
+
+    res.json({ success: true, mentorship });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

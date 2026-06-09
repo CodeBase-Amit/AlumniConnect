@@ -78,6 +78,24 @@ export const markMessageRead = (messageId) => {
   }
 };
 
+export const joinMentorshipRoom = (mentorshipId) => {
+  if (socket) {
+    socket.emit('mentorship:join', mentorshipId);
+  }
+};
+
+export const leaveMentorshipRoom = (mentorshipId) => {
+  if (socket) {
+    socket.emit('mentorship:leave', mentorshipId);
+  }
+};
+
+export const sendMentorshipMessage = (data) => {
+  if (socket) {
+    socket.emit('message:mentorship', data);
+  }
+};
+
 export default {
   initializeSocket,
   getSocket,
@@ -89,4 +107,7 @@ export default {
   startTyping,
   stopTyping,
   markMessageRead,
+  joinMentorshipRoom,
+  leaveMentorshipRoom,
+  sendMentorshipMessage,
 };

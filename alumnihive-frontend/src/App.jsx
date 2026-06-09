@@ -29,6 +29,7 @@ import Events from './pages/Events.jsx'
 import CreateEvent from './pages/CreateEvent.jsx'
 import EventDetail from './pages/EventDetail.jsx'
 import ChatPage from './pages/ChatPage.jsx'
+import Notifications from './pages/Notifications.jsx'
 
 function App() {
   return (
@@ -81,6 +82,9 @@ function App() {
 
             {/* Profile */}
             <Route path="/profile/:id?" element={<PrivateRoute><Profile /></PrivateRoute>} />
+
+            {/* Notifications */}
+            <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
 
             {/* Redirect fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

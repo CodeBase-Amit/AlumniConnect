@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Message = require('../models/Message');
 const Community = require('../models/Community');
+const Mentorship = require('../models/Mentorship');
 
 // Store active users
 const activeUsers = new Map();
@@ -84,6 +85,66 @@ const initializeSocket = (io) => {
     socket.on('community:leave', (communityId) => {
       socket.leave(`community:${communityId}`);
       console.log(`User ${socket.user.name} left community ${communityId}`);
+    });
+
+    // Mentorship room events
+    socket.on('mentorship:join', async (mentorshipId) => {
+      try {
+        const mentorship = await Mentorship.findById(mentorshipId).select('mentor mentee');
+        if (!mentorship) {
+          return socket.emit('message:error', { message: 'Mentorship not found' });
+        }
+
+        const isMember = mentorship.mentor.toString() === socket.user._id.toString() ||
+          mentorship.mentee.toString() === socket.user._id.toString();
+
+        if (!isMember) {
+          return socket.emit('message:error', { message: 'Not authorized for this mentorship' });
+        }
+
+        socket.join(`mentorship:${mentorshipId}`);
+      } catch (error) {
+        socket.emit('message:error', { message: 'Unable to join mentorship room' });
+      }
+    });
+
+    socket.on('mentorship:leave', (mentorshipId) => {
+      socket.leave(`mentorship:${mentorshipId}`);
+    });
+
+    socket.on('message:mentorship', async (data) => {
+      try {
+        const { mentorshipId, content, type } = data;
+
+        if (!mentorshipId || !content || !String(content).trim()) {
+          return socket.emit('message:error', { message: 'Mentorship ID and content are required' });
+        }
+
+        const mentorship = await Mentorship.findById(mentorshipId).select('mentor mentee');
+        if (!mentorship) {
+          return socket.emit('message:error', { message: 'Mentorship not found' });
+        }
+
+        const isMember = mentorship.mentor.toString() === socket.user._id.toString() ||
+          mentorship.mentee.toString() === socket.user._id.toString();
+
+        if (!isMember) {
+          return socket.emit('message:error', { message: 'Not authorized' });
+        }
+
+        const message = await Message.create({
+          sender: socket.user._id,
+          mentorship: mentorshipId,
+          content,
+          type: type || 'text'
+        });
+
+        await message.populate('sender', 'name avatar role');
+
+        io.to(`mentorship:${mentorshipId}`).emit('message:mentorship:new', message);
+      } catch (error) {
+        socket.emit('message:error', { message: error.message });
+      }
     });
 
     // Send message to community

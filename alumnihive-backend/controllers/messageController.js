@@ -1,5 +1,6 @@
 const Message = require('../models/Message');
 const Community = require('../models/Community');
+const Mentorship = require('../models/Mentorship');
 
 // @desc    Get community messages
 // @route   GET /api/messages/community/:communityId
@@ -93,6 +94,51 @@ exports.getPrivateMessages = async (req, res) => {
       success: false,
       message: 'Server error'
     });
+  }
+};
+
+// @desc    Get mentorship messages
+// @route   GET /api/messages/mentorship/:mentorshipId
+// @access  Private
+exports.getMentorshipMessages = async (req, res) => {
+  try {
+    const { mentorshipId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+
+    const mentorship = await Mentorship.findById(mentorshipId).select('mentor mentee');
+    if (!mentorship) {
+      return res.status(404).json({ success: false, message: 'Mentorship not found' });
+    }
+
+    const isMember = mentorship.mentor.toString() === req.user._id.toString() ||
+      mentorship.mentee.toString() === req.user._id.toString();
+
+    if (!isMember) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const messages = await Message.find({
+      mentorship: mentorshipId,
+      isDeleted: false
+    })
+      .populate('sender', 'name avatar role')
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: 1 });
+
+    await Message.updateMany(
+      {
+        mentorship: mentorshipId,
+        sender: { $ne: req.user._id },
+        read: false
+      },
+      { $set: { read: true, readAt: new Date() } }
+    );
+
+    res.json({ success: true, messages });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

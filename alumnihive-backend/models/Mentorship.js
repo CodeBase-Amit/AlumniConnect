@@ -27,7 +27,15 @@ const MentorshipSchema = new mongoose.Schema({
     description: String,
     scheduledAt: Date,
     duration: Number, // in minutes
-    status: {
+  title: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  status: {
       type: String,
       enum: ['scheduled', 'completed', 'cancelled'],
       default: 'scheduled'
@@ -36,6 +44,22 @@ const MentorshipSchema = new mongoose.Schema({
     completedAt: Date
   }],
   feedback: [{
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5
+    },
+    comment: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  menteeFeedback: [{
     from: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'

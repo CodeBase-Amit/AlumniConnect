@@ -10,6 +10,10 @@ const MessageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Community'
   },
+  mentorship: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Mentorship'
+  },
   receiver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -73,6 +77,7 @@ const MessageSchema = new mongoose.Schema({
 
 // Index for efficient queries
 MessageSchema.index({ community: 1, createdAt: -1 });
+MessageSchema.index({ mentorship: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
 MessageSchema.index({ deletedFor: 1 });
 

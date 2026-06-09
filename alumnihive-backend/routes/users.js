@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getUsers, getUserById, updateProfile,
-  getMentors, becomeMentor,
+  getMentors, becomeMentor, updateMentorApplication,
   getNotifications, markNotificationRead,
   updateProfilePhoto
 } = require('../controllers/userController');
@@ -14,6 +14,7 @@ const profileUpload = createImageUpload('profile');
 router.get('/', protect, getUsers);
 router.get('/mentors', protect, getMentors);
 router.post('/become-mentor', protect, becomeMentor);
+router.put('/mentor-application', protect, updateMentorApplication);
 router.get('/notifications', protect, getNotifications);
 router.put('/notifications/:id/read', protect, markNotificationRead);
 router.get('/:id', protect, getUserById);
