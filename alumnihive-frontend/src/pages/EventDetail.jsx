@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import MainLayout from '../components/Layout/MainLayout';
 import { eventsAPI } from '../services/api';
-import { resolveMediaUrl } from '../utils/constants';
+import CoverImage from '../components/CoverImage';
+import { CalendarIcon, MapPinIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -21,7 +22,6 @@ const EventDetail = () => {
         setLoading(false);
       }
     };
-
     loadEvent();
   }, [id]);
 
@@ -36,49 +36,47 @@ const EventDetail = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="text-center py-16">Loading event...</div>
-      </MainLayout>
-    );
-  }
-
-  if (!event) {
-    return (
-      <MainLayout>
-        <div className="text-center py-16">Event not found</div>
-      </MainLayout>
-    );
-  }
+  if (loading) return <MainLayout><div className="text-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-[3px] border-primary-600 border-t-transparent mx-auto"></div></div></MainLayout>;
+  if (!event) return <MainLayout><p className="text-center py-12 text-gray-400">Event not found</p></MainLayout>;
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        <img
-          src={resolveMediaUrl(event.coverImage || 'https://via.placeholder.com/800x360')}
-          alt={event.title}
-          className="w-full h-80 object-cover rounded-xl"
-        />
+      <div className="max-w-3xl mx-auto space-y-5">
+        <CoverImage type="event" className="w-full h-64 rounded-xl" title={event.title} />
 
-        <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <div className="card space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-3xl font-bold">{event.title}</h1>
-            <span className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded-full capitalize">{event.status}</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{event.title}</h1>
+            <span className="badge-primary capitalize text-xs">{event.status}</span>
           </div>
 
-          <p className="text-gray-700">{event.description}</p>
+          <p className="text-gray-600">{event.description}</p>
 
-          <div className="grid md:grid-cols-2 gap-3 text-sm">
-            <p><span className="font-semibold">Community:</span> {event.community?.name}</p>
-            <p><span className="font-semibold">Type:</span> {event.eventType}</p>
-            <p><span className="font-semibold">Starts:</span> {new Date(event.startDate).toLocaleString()}</p>
-            <p><span className="font-semibold">Ends:</span> {new Date(event.endDate).toLocaleString()}</p>
-            <p><span className="font-semibold">Location:</span> {event.location?.type}</p>
-            <p><span className="font-semibold">Attendees:</span> {event.attendees?.length || 0}</p>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2 text-gray-500">
+              <CalendarIcon className="w-4 h-4 text-gray-400" />
+              <span><span className="font-medium text-gray-700">Starts:</span> {new Date(event.startDate).toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <CalendarIcon className="w-4 h-4 text-gray-400" />
+              <span><span className="font-medium text-gray-700">Ends:</span> {new Date(event.endDate).toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <MapPinIcon className="w-4 h-4 text-gray-400" />
+              <span><span className="font-medium text-gray-700">Location:</span> {event.location?.type}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <UsersIcon className="w-4 h-4 text-gray-400" />
+              <span><span className="font-medium text-gray-700">Attendees:</span> {event.attendees?.length || 0}</span>
+            </div>
           </div>
 
-          <button onClick={handleRegister} className="btn-primary w-full py-3">Register For Event</button>
+          <div className="text-sm text-gray-500">
+            <span className="font-medium text-gray-700">Community:</span> {event.community?.name} &nbsp;|&nbsp;
+            <span className="font-medium text-gray-700">Type:</span> {event.eventType}
+          </div>
+
+          <button onClick={handleRegister} className="btn-primary w-full justify-center">Register For Event</button>
         </div>
       </div>
     </MainLayout>

@@ -16,9 +16,7 @@ const AdminLogin = () => {
 
     try {
       const result = await login(formData);
-      if (!result.success) {
-        return;
-      }
+      if (!result.success) return;
 
       if (result.user.role !== 'admin') {
         logout();
@@ -37,49 +35,33 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-float p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-800 rounded-xl mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white font-bold text-3xl">⚙️</span>
+          <div className="w-14 h-14 bg-red-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+            <span className="text-white font-bold text-xl">A</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Login</h1>
-          <p className="text-gray-600 mt-2">Access admin dashboard</p>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Login</h1>
+          <p className="text-gray-500 mt-1 text-sm">Access admin dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="input-label">Email</label>
             <div className="relative">
               <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="input-field pl-10"
-                required
-              />
+              <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input-field pl-10" required />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="input-label">Password</label>
             <div className="relative">
               <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="input-field pl-10"
-                required
-              />
+              <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="input-field pl-10" required />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
-          >
+          <button type="submit" disabled={loading} className="bg-red-600 text-white w-full py-2.5 rounded-lg hover:bg-red-700 transition-all duration-200 font-medium disabled:opacity-50 cursor-pointer">
             {loading ? 'Logging in...' : 'Login as Admin'}
           </button>
         </form>

@@ -13,66 +13,36 @@ const VerifyEmail = () => {
 
   useEffect(() => {
     const verify = async () => {
-      if (!token) {
-        setStatus('error');
-        setMessage('No verification token provided');
-        setLoading(false);
-        return;
-      }
-
+      if (!token) { setStatus('error'); setMessage('No verification token provided'); setLoading(false); return; }
       try {
         const res = await authAPI.verifyEmail(token);
         setStatus('success');
         setMessage(res.data.message || 'Email verified successfully!');
-        toast.success('Email verified! Redirecting to login...');
+        toast.success('Email verified!');
         setTimeout(() => navigate('/login'), 3000);
       } catch (error) {
         setStatus('error');
-        setMessage(error.response?.data?.message || 'Verification failed. Token may have expired.');
+        setMessage(error.response?.data?.message || 'Verification failed');
         toast.error(error.response?.data?.message || 'Verification failed');
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
     verify();
   }, [token, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying your email...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'success') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Email Verified!</h1>
-          <p className="text-gray-600 mb-6">{message}</p>
-          <p className="text-sm text-gray-500">Redirecting to login page...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
+      <div className="text-center"><div className="animate-spin rounded-full h-10 w-10 border-[3px] border-primary-600 border-t-transparent mx-auto mb-3"></div><p className="text-gray-500 text-sm">Verifying your email...</p></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        <XCircleIcon className="w-20 h-20 text-red-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Verification Failed</h1>
-        <p className="text-gray-600 mb-6">{message}</p>
-        <button
-          onClick={() => navigate('/login')}
-          className="btn-primary w-full py-2"
-        >
-          Back to Login
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-float p-8 max-w-md w-full text-center">
+        {status === 'success' ? (
+          <><CheckCircleIcon className="w-16 h-16 text-accent-500 mx-auto mb-4" /><h1 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h1><p className="text-gray-500 text-sm mb-4">{message}</p><p className="text-xs text-gray-400">Redirecting to login...</p></>
+        ) : (
+          <><XCircleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" /><h1 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h1><p className="text-gray-500 text-sm mb-6">{message}</p><button onClick={() => navigate('/login')} className="btn-primary w-full justify-center">Back to Login</button></>
+        )}
       </div>
     </div>
   );

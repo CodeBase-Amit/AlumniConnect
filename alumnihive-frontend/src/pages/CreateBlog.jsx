@@ -3,41 +3,25 @@ import MainLayout from '../components/Layout/MainLayout';
 import { blogsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { resolveMediaUrl } from '../utils/constants';
+import CoverImage from '../components/CoverImage';
 
 const CreateBlog = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    excerpt: '',
-    coverImage: '',
-    tags: '',
-    category: 'technology'
-  });
+  const [formData, setFormData] = useState({ title: '', content: '', excerpt: '', coverImage: '', tags: '', category: 'technology' });
   const [loading, setLoading] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e, publish = false) => {
     e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.content.trim()) {
-      toast.error('Title and content are required');
-      return;
-    }
-    
+    if (!formData.title.trim() || !formData.content.trim()) { toast.error('Title and content are required'); return; }
     try {
       setLoading(true);
-      
       const blogData = new FormData();
       blogData.append('title', formData.title);
       blogData.append('content', formData.content);
@@ -45,177 +29,75 @@ const CreateBlog = () => {
       blogData.append('category', formData.category);
       blogData.append('tags', formData.tags);
       blogData.append('isPublished', String(publish));
+      if (coverFile) blogData.append('coverImage', coverFile);
+      else if (formData.coverImage) blogData.append('coverImage', formData.coverImage);
 
-      if (coverFile) {
-        blogData.append('coverImage', coverFile);
-      } else if (formData.coverImage) {
-        blogData.append('coverImage', formData.coverImage);
-      }
-      
       const res = await blogsAPI.createBlog(blogData);
       toast.success(res.data.message);
       navigate(`/blogs/${res.data.blog.slug}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create blog');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const categories = ['technology', 'career', 'education', 'lifestyle', 'other'];
 
-  const handleCoverChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
-  };
-
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">✍️ Write a Blog</h1>
-          <p className="text-gray-600 mt-1">Share your knowledge with the community</p>
+      <div className="max-w-3xl mx-auto space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Write a Blog</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Share your knowledge with the community</p>
         </div>
 
-        <form className="space-y-6">
-          {/* Title */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title *
-            </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Enter blog title..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg"
-              required
-            />
+        <form className="space-y-5">
+          <div className="card space-y-4">
+            <div>
+              <label className="input-label">Title *</label>
+              <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="Enter blog title..." className="input-field text-lg" required />
+            </div>
+
+            <div className="space-y-3">
+              <label className="input-label">Cover Image</label>
+              <input type="file" accept="image/*" className="w-full text-sm" onChange={(e) => {
+                const file = e.target.files?.[0]; if (!file) return;
+                setCoverFile(file); setCoverPreview(URL.createObjectURL(file));
+              }} />
+              <p className="text-xs text-gray-400">Optional: or provide a URL</p>
+              <input type="url" name="coverImage" value={formData.coverImage} onChange={handleChange} placeholder="https://example.com/image.jpg" className="input-field" />
+              {(coverPreview || formData.coverImage) && (
+                <CoverImage type="blog" className="w-full h-40 rounded-lg" title="Cover preview" />
+              )}
+            </div>
+
+            <div>
+              <label className="input-label">Excerpt</label>
+              <textarea name="excerpt" value={formData.excerpt} onChange={handleChange} placeholder="Brief summary..." className="input-field" rows={2} maxLength={300} />
+              <p className="text-xs text-gray-400 mt-1">{formData.excerpt.length}/300</p>
+            </div>
           </div>
 
-          {/* Cover Image */}
-          <div className="bg-white rounded-lg shadow-md p-6 space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Cover Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleCoverChange}
-              className="w-full text-sm"
-            />
-            <p className="text-xs text-gray-500">Optional: you can also provide image URL.</p>
-            <input
-              type="url"
-              name="coverImage"
-              value={formData.coverImage}
-              onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-            {(coverPreview || formData.coverImage) && (
-              <img
-                src={coverPreview || resolveMediaUrl(formData.coverImage)}
-                alt="Preview"
-                className="mt-4 w-full h-48 object-cover rounded-lg"
-                onError={(e) => e.target.style.display = 'none'}
-              />
-            )}
+          <div className="card">
+            <label className="input-label">Content *</label>
+            <textarea name="content" value={formData.content} onChange={handleChange} placeholder="Write your blog content here..." className="input-field" rows={12} required />
           </div>
 
-          {/* Excerpt */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Excerpt (Short description)
-            </label>
-            <textarea
-              name="excerpt"
-              value={formData.excerpt}
-              onChange={handleChange}
-              placeholder="Brief summary of your blog..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              rows="2"
-              maxLength="300"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {formData.excerpt.length}/300 characters
-            </p>
-          </div>
-
-          {/* Content */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Content *
-            </label>
-            <textarea
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              placeholder="Write your blog content here..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              rows="15"
-              required
-            />
-          </div>
-
-          {/* Category and Tags */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category *
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </option>
-                ))}
+          <div className="grid sm:grid-cols-2 gap-5">
+            <div className="card">
+              <label className="input-label">Category *</label>
+              <select name="category" value={formData.category} onChange={handleChange} className="select-field">
+                {categories.map(cat => <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>)}
               </select>
             </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags (comma separated)
-              </label>
-              <input
-                type="text"
-                name="tags"
-                value={formData.tags}
-                onChange={handleChange}
-                placeholder="react, javascript, web development"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
+            <div className="card">
+              <label className="input-label">Tags</label>
+              <input type="text" name="tags" value={formData.tags} onChange={handleChange} placeholder="react, javascript" className="input-field" />
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex space-x-4">
-            <button
-              type="button"
-              onClick={(e) => handleSubmit(e, false)}
-              disabled={loading}
-              className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition disabled:opacity-50"
-            >
-              {loading ? 'Saving...' : 'Save as Draft'}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => handleSubmit(e, true)}
-              disabled={loading}
-              className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
-            >
-              {loading ? 'Publishing...' : 'Publish Blog'}
-            </button>
+          <div className="flex gap-4">
+            <button type="button" onClick={(e) => handleSubmit(e, false)} disabled={loading} className="btn-secondary flex-1 justify-center">{loading ? 'Saving...' : 'Save as Draft'}</button>
+            <button type="button" onClick={(e) => handleSubmit(e, true)} disabled={loading} className="btn-primary flex-1 justify-center">{loading ? 'Publishing...' : 'Publish Blog'}</button>
           </div>
         </form>
       </div>
