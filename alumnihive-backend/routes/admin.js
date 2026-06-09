@@ -6,6 +6,9 @@ const {
   rejectUser,
   getDashboardStats,
   getUsers,
+  getMentorApplications,
+  approveMentorApplication,
+  rejectMentorApplication,
   blockUser,
   unblockUser,
   getContentList,
@@ -31,6 +34,9 @@ router.use((req, res, next) => {
 router.get('/pending-approvals', getPendingApprovals);
 router.post('/approve/:userId', approveUser);
 router.post('/reject/:userId', rejectUser);
+router.get('/mentor-applications', getMentorApplications);
+router.post('/mentor-applications/:userId/approve', approveMentorApplication);
+router.post('/mentor-applications/:userId/reject', rejectMentorApplication);
 router.get('/stats', getDashboardStats);
 router.get('/users', getUsers);
 router.post('/users/:userId/block', blockUser);

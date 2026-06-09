@@ -10,6 +10,7 @@ const AdminUsers = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [mentorApplications, setMentorApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -30,9 +31,10 @@ const AdminUsers = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const [allUsersRes, pendingUsersRes] = await Promise.all([
+      const [allUsersRes, pendingUsersRes, mentorApplicationsRes] = await Promise.all([
         adminAPI.getUsers({ search: search || undefined, status: status || undefined }),
-        adminAPI.getUsers({ status: 'pending', limit: 200 })
+        adminAPI.getUsers({ status: 'pending', limit: 200 }),
+        adminAPI.getMentorApplications()
       ]);
 
       setUsers(allUsersRes.data.users || []);
@@ -41,10 +43,31 @@ const AdminUsers = () => {
         (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
       );
       setPendingUsers(pending);
+      setMentorApplications((mentorApplicationsRes.data.users || []).filter((item) => item.mentorDetails?.applicationStatus === 'pending'));
     } catch (error) {
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveMentor = async (userId) => {
+    try {
+      await adminAPI.approveMentorApplication(userId);
+      toast.success('Mentor application approved');
+      loadUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to approve mentor application');
+    }
+  };
+
+  const handleRejectMentor = async (userId) => {
+    try {
+      await adminAPI.rejectMentorApplication(userId, { reason: 'Rejected by admin from mentor review' });
+      toast.success('Mentor application rejected');
+      loadUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to reject mentor application');
     }
   };
 
@@ -111,6 +134,45 @@ const AdminUsers = () => {
                   </button>
                   <button
                     onClick={() => handleReject(pending._id)}
+                    className="rounded-lg px-3 py-1 text-sm bg-red-100 text-red-700"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Mentor Applications</h2>
+          <span className="text-sm text-gray-500">{mentorApplications.length} pending</span>
+        </div>
+
+        {mentorApplications.length === 0 ? (
+          <p className="text-sm text-gray-500">No mentor applications waiting for review.</p>
+        ) : (
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            {mentorApplications.map((application) => (
+              <div key={application._id} className="border border-gray-200 rounded-lg p-3 flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="font-medium text-sm">{application.name}</p>
+                  <p className="text-xs text-gray-600">{application.email}</p>
+                  <p className="text-xs text-gray-500">Expertise: {(application.mentorDetails?.expertise || []).join(', ') || 'N/A'}</p>
+                  <p className="text-xs text-gray-500">Availability: {application.mentorDetails?.availability || 'N/A'}</p>
+                  <p className="text-xs text-gray-500">Bio: {application.mentorDetails?.bio || 'N/A'}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleApproveMentor(application._id)}
+                    className="rounded-lg px-3 py-1 text-sm bg-emerald-100 text-emerald-700"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleRejectMentor(application._id)}
                     className="rounded-lg px-3 py-1 text-sm bg-red-100 text-red-700"
                   >
                     Reject

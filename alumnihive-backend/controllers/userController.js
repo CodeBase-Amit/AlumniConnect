@@ -1,6 +1,21 @@
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 
+const normalizeList = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => `${item}`.trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private
@@ -156,7 +171,12 @@ exports.getMentors = async (req, res) => {
   try {
     const { expertise, search, page = 1, limit = 20 } = req.query;
 
-    const query = { isMentor: true, role: 'alumni' };
+    const query = {
+      isMentor: true,
+      role: 'alumni',
+      isBlocked: false,
+      'mentorDetails.applicationStatus': 'approved'
+    };
 
     if (expertise) {
       query['mentorDetails.expertise'] = { $in: [expertise] };
@@ -170,7 +190,7 @@ exports.getMentors = async (req, res) => {
     }
 
     const mentors = await User.find(query)
-      .select('name avatar bio role mentorDetails currentCompany currentPosition')
+      .select('name avatar bio role mentorDetails currentCompany currentPosition department skills interests college graduationYear')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -206,22 +226,29 @@ exports.becomeMentor = async (req, res) => {
     }
 
     const { expertise, availability, maxMentees, bio } = req.body;
+    const normalizedExpertise = normalizeList(expertise);
+    const parsedMaxMentees = Number.parseInt(maxMentees, 10);
 
     const user = await User.findById(req.user._id);
 
-    user.isMentor = true;
+    user.isMentor = false;
     user.mentorDetails = {
-      expertise,
+      expertise: normalizedExpertise,
       availability,
-      maxMentees: maxMentees || 5,
-      bio
+      maxMentees: Number.isFinite(parsedMaxMentees) && parsedMaxMentees > 0 ? parsedMaxMentees : 5,
+      bio,
+      applicationStatus: 'pending',
+      appliedAt: new Date(),
+      reviewedAt: undefined,
+      reviewedBy: undefined,
+      rejectionReason: undefined
     };
 
     await user.save();
 
     res.json({
       success: true,
-      message: 'You are now a mentor!',
+      message: 'Mentor application submitted for admin review',
       user
     });
   } catch (error) {

@@ -91,7 +91,19 @@ const UserSchema = new mongoose.Schema({
       type: Number,
       default: 5
     },
-    bio: String
+    bio: String,
+    applicationStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none'
+    },
+    appliedAt: Date,
+    reviewedAt: Date,
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    rejectionReason: String
   },
   createdAt: {
     type: Date,

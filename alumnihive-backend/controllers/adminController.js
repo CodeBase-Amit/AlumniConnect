@@ -37,6 +37,18 @@ const sendModerationNotification = async ({ recipient, sender, title, message, l
   });
 };
 
+const updateMentorApplication = async ({ user, status, reviewedBy, rejectionReason }) => {
+  user.mentorDetails = {
+    ...(user.mentorDetails || {}),
+    applicationStatus: status,
+    reviewedAt: new Date(),
+    reviewedBy,
+    rejectionReason: rejectionReason || undefined
+  };
+  user.isMentor = status === 'approved';
+  await user.save();
+};
+
 // Get all pending approvals
 exports.getPendingApprovals = async (req, res) => {
   try {
@@ -523,6 +535,109 @@ exports.getModerationLogs = async (req, res) => {
         total,
         totalPages: Math.ceil(total / limit)
       }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Get mentor applications
+exports.getMentorApplications = async (req, res) => {
+  try {
+    const users = await User.find({
+      role: 'alumni',
+      'mentorDetails.applicationStatus': { $in: ['pending', 'approved', 'rejected'] }
+    })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Approve mentor application
+exports.approveMentorApplication = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    await updateMentorApplication({
+      user,
+      status: 'approved',
+      reviewedBy: req.user._id
+    });
+
+    await createLog({
+      targetType: 'user',
+      targetId: user._id,
+      action: 'approve-mentor',
+      reason: 'Approved mentor application',
+      actor: req.user._id
+    });
+
+    await sendModerationNotification({
+      recipient: user._id,
+      sender: req.user._id,
+      title: 'Mentor Application Approved',
+      message: 'Your mentor profile is now active and visible to students.',
+      link: '/mentorship'
+    });
+
+    res.json({
+      success: true,
+      message: 'Mentor application approved successfully',
+      user
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Reject mentor application
+exports.rejectMentorApplication = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    await updateMentorApplication({
+      user,
+      status: 'rejected',
+      reviewedBy: req.user._id,
+      rejectionReason: reason || 'Rejected by admin'
+    });
+
+    await createLog({
+      targetType: 'user',
+      targetId: user._id,
+      action: 'reject-mentor',
+      reason: reason || 'Rejected by admin',
+      actor: req.user._id
+    });
+
+    await sendModerationNotification({
+      recipient: user._id,
+      sender: req.user._id,
+      title: 'Mentor Application Rejected',
+      message: reason || 'Your mentor application was not approved at this time.',
+      link: '/mentorship'
+    });
+
+    res.json({
+      success: true,
+      message: 'Mentor application rejected successfully',
+      user
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });

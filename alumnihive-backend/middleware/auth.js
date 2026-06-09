@@ -1,6 +1,14 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const isUserApproved = (user) => {
+  if (!user) {
+    return false;
+  }
+
+  return Boolean(user.isApprovedByAdmin || user.isApproved);
+};
+
 const protect = async (req, res, next) => {
   try {
     let token;
@@ -61,12 +69,7 @@ const protect = async (req, res, next) => {
         });
       }
 
-      const isApproved =
-        typeof req.user.isApprovedByAdmin === "boolean"
-          ? req.user.isApprovedByAdmin
-          : req.user.isApproved;
-
-      if (!isApproved) {
+      if (!isUserApproved(req.user)) {
         return res.status(403).json({
           success: false,
 

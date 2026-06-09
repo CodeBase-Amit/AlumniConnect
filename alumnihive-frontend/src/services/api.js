@@ -96,6 +96,7 @@ export const mentorshipAPI = {
   getRequests: () => api.get('/mentorship/requests'),
   respondToRequest: (id, data) => api.put(`/mentorship/requests/${id}/respond`, data),
   getMentorships: (params) => api.get('/mentorship/my-mentorships', { params }),
+  getMentorMatches: (params) => api.get('/mentorship/matches', { params }),
   addSession: (id, data) => api.post(`/mentorship/${id}/sessions`, data),
 };
 
@@ -142,6 +143,9 @@ export const adminAPI = {
   getPendingApprovals: () => api.get('/admin/pending-approvals'),
   approveUser: (userId) => api.post(`/admin/approve/${userId}`),
   rejectUser: (userId, data) => api.post(`/admin/reject/${userId}`, data),
+  getMentorApplications: () => api.get('/admin/mentor-applications'),
+  approveMentorApplication: (userId) => api.post(`/admin/mentor-applications/${userId}/approve`),
+  rejectMentorApplication: (userId, data) => api.post(`/admin/mentor-applications/${userId}/reject`, data),
   getUsers: (params) => api.get('/admin/users', { params }),
   blockUser: (userId, reason) => api.post(`/admin/users/${userId}/block`, { reason }),
   unblockUser: (userId, reason) => api.post(`/admin/users/${userId}/unblock`, { reason }),

@@ -5,6 +5,14 @@ const { validationResult } = require('express-validator');
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@platform.admin').toLowerCase();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123';
 
+const isUserApproved = (user) => {
+  if (!user) {
+    return false;
+  }
+
+  return Boolean(user.isApprovedByAdmin || user.isApproved);
+};
+
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -238,12 +246,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    const isApproved =
-      typeof user.isApprovedByAdmin === 'boolean'
-        ? user.isApprovedByAdmin
-        : user.isApproved;
-
-    if (!isApproved) {
+    if (!isUserApproved(user)) {
       return res.status(403).json({
         success: false,
         message: 'Your account is pending admin approval'
